@@ -1,6 +1,6 @@
 # UpNext Creators
 
-A creator marketplace for the Jos Plateau — discover, book, and chat with local creators.
+An app to push, showcase, and book creators on the Jos Plateau.
 
 ## Features
 
