@@ -3,10 +3,11 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LogIn, Mail, Lock, Sparkles } from "lucide-react";
+import { LogIn, Mail, Sparkles } from "lucide-react";
 import { creatorSignIn, getLoggedInCreator } from "@/lib/creator-auth";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { authInputClass, authLabelClass } from "@/components/auth/AuthSection";
+import { PasswordInput } from "@/components/auth/PasswordInput";
 import { MaintenanceNotice } from "@/components/MaintenanceNotice";
 import { AppSettings, defaultAppSettings } from "@/lib/app-settings";
 import { fetchAppSettings } from "@/lib/app-settings-client";
@@ -112,23 +113,16 @@ export default function SignInPage() {
           <label htmlFor="password" className={authLabelClass}>
             Password
           </label>
-          <div className="relative">
-            <Lock
-              size={16}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-olive-400"
-            />
-            <input
-              id="password"
-              type="password"
-              className={`${authInputClass} pl-10`}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              autoComplete="current-password"
-              required
-              disabled={blocked}
-            />
-          </div>
+          <PasswordInput
+            id="password"
+            showLockIcon
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            autoComplete="current-password"
+            required
+            disabled={blocked}
+          />
         </div>
 
         {error && (

@@ -23,6 +23,7 @@ import {
 } from "@/components/ServiceList";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { AuthSection, authInputClass, authLabelClass } from "@/components/auth/AuthSection";
+import { PasswordInput } from "@/components/auth/PasswordInput";
 import { MaintenanceNotice } from "@/components/MaintenanceNotice";
 import { AppSettings, defaultAppSettings } from "@/lib/app-settings";
 import { fetchAppSettings } from "@/lib/app-settings-client";
@@ -180,10 +181,8 @@ export default function RegisterPage() {
               <label htmlFor="password" className={authLabelClass}>
                 Password *
               </label>
-              <input
+              <PasswordInput
                 id="password"
-                type="password"
-                className={authInputClass}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Min. 6 characters"
@@ -195,10 +194,8 @@ export default function RegisterPage() {
               <label htmlFor="confirm-password" className={authLabelClass}>
                 Confirm password *
               </label>
-              <input
+              <PasswordInput
                 id="confirm-password"
-                type="password"
-                className={authInputClass}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Repeat password"

@@ -3,8 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Lock, Mail, Shield } from "lucide-react";
+import { ArrowLeft, Mail, Shield } from "lucide-react";
 import { adminLogin } from "@/lib/admin-auth";
+import { PasswordInput } from "@/components/auth/PasswordInput";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -80,21 +81,15 @@ export default function AdminLoginPage() {
             >
               Password
             </label>
-            <div className="relative">
-              <Lock
-                size={16}
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-olive-400"
-              />
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter admin password"
-                className="w-full rounded-xl border border-olive-200 bg-milky-50 py-3 pl-10 pr-4 text-olive-900 placeholder:text-olive-400 focus:border-olive-500 focus:outline-none focus:ring-2 focus:ring-olive-200"
-                required
-              />
-            </div>
+            <PasswordInput
+              id="password"
+              showLockIcon
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter admin password"
+              className="w-full rounded-xl border border-olive-200 bg-milky-50 py-3 pl-10 pr-10 text-olive-900 placeholder:text-olive-400 focus:border-olive-500 focus:outline-none focus:ring-2 focus:ring-olive-200"
+              required
+            />
           </div>
 
           {error && (
