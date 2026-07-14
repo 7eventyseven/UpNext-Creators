@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Send, ArrowLeft, MessageCircle } from "lucide-react";
-import { creators } from "@/data/creators";
+import { getAllCreators } from "@/data/creators";
 import {
   getConversations,
   getOrCreateConversation,
@@ -17,6 +17,7 @@ import { Conversation, ChatMessage } from "@/types";
 function ChatContent() {
   const searchParams = useSearchParams();
   const creatorParam = searchParams.get("creator");
+  const creators = getAllCreators();
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);

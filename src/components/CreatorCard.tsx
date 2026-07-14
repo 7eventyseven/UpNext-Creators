@@ -10,18 +10,20 @@ interface CreatorCardProps {
 }
 
 export function CreatorCard({ creator, index = 0 }: CreatorCardProps) {
-  const lowestPrice = Math.min(
-    ...creator.services.map((s) => s.discountPrice ?? s.price)
-  );
+  const lowestPrice =
+    creator.services.length > 0
+      ? Math.min(...creator.services.map((s) => s.discountPrice ?? s.price))
+      : null;
   const hasDiscount = creator.services.some((s) => s.discountPrice);
+  const hasVideos = (creator.videos?.length ?? 0) > 0;
 
   return (
     <Link
       href={`/creators/${creator.id}`}
-      className="group block animate-fade-in"
-      style={{ animationDelay: `${index * 80}ms` }}
+      className="group block animate-scale-in"
+      style={{ animationDelay: `${750 + index * 90}ms` }}
     >
-      <article className="overflow-hidden rounded-2xl border border-olive-200/70 bg-milky-50 shadow-sm transition-all duration-300 hover:shadow-lg hover:border-olive-300 hover:-translate-y-0.5">
+      <article className="card-hover overflow-hidden rounded-2xl border border-olive-200/70 bg-milky-50 shadow-sm">
         <div className="relative h-36 overflow-hidden bg-olive-100">
           <Image
             src={creator.coverImage}
@@ -45,12 +47,21 @@ export function CreatorCard({ creator, index = 0 }: CreatorCardProps) {
 
           <div className="absolute -bottom-6 left-4">
             <div className="relative h-14 w-14 overflow-hidden rounded-xl border-3 border-milky-50 shadow-md bg-milky-100">
-              <Image
-                src={creator.avatar}
-                alt={creator.name}
-                fill
-                className="object-cover"
-              />
+              {creator.avatar.startsWith("data:") ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={creator.avatar}
+                  alt={creator.name}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <Image
+                  src={creator.avatar}
+                  alt={creator.name}
+                  fill
+                  className="object-cover"
+                />
+              )}
             </div>
           </div>
         </div>
@@ -87,8 +98,21 @@ export function CreatorCard({ creator, index = 0 }: CreatorCardProps) {
 
           <div className="mt-3 flex items-center justify-between border-t border-olive-100 pt-3">
             <div>
-              <span className="text-xs text-olive-500">From</span>
-              <p className="font-semibold text-olive-800">{formatPrice(lowestPrice)}</p>
+              {lowestPrice !== null ? (
+                <>
+                  <span className="text-xs text-olive-500">From</span>
+                  <p className="font-semibold text-olive-800">
+                    {formatPrice(lowestPrice)}
+                  </p>
+                </>
+              ) : hasVideos ? (
+                <p className="text-xs font-medium text-olive-600">
+                  {creator.videos!.length} showcase video
+                  {creator.videos!.length !== 1 ? "s" : ""}
+                </p>
+              ) : (
+                <p className="text-xs text-olive-500">New creator</p>
+              )}
             </div>
             {hasDiscount && (
               <span className="rounded-full bg-olive-600 px-2.5 py-0.5 text-xs font-semibold text-milky-50">

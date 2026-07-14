@@ -76,12 +76,21 @@ export default function CreatorProfilePage({
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="relative -mt-16 flex flex-col sm:flex-row sm:items-end gap-4">
           <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-2xl border-4 border-milky-100 shadow-lg bg-milky-100">
-            <Image
-              src={creator.avatar}
-              alt={creator.name}
-              fill
-              className="object-cover"
-            />
+            {creator.avatar.startsWith("data:") ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={creator.avatar}
+                alt={creator.name}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <Image
+                src={creator.avatar}
+                alt={creator.name}
+                fill
+                className="object-cover"
+              />
+            )}
           </div>
           <div className="flex-1 pb-2">
             <div className="flex flex-wrap items-center gap-2">
@@ -164,21 +173,59 @@ export default function CreatorProfilePage({
 
         <section className="mt-10">
           <h2 className="text-xl font-bold text-olive-900 mb-4">Services & Pricing</h2>
-          <div className="space-y-3">
-            {creator.services.map((service) => (
-              <ServiceCard
-                key={service.id}
-                service={service}
-                selected={selectedService?.id === service.id}
-                onSelect={() =>
-                  setSelectedService(
-                    selectedService?.id === service.id ? null : service
-                  )
-                }
-              />
-            ))}
-          </div>
+          {creator.services.length === 0 ? (
+            <p className="text-olive-500 text-sm rounded-xl border border-olive-200 bg-olive-50/50 px-4 py-6 text-center">
+              No services listed yet. This creator can add services from their dashboard.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {creator.services.map((service) => (
+                <ServiceCard
+                  key={service.id}
+                  service={service}
+                  selected={selectedService?.id === service.id}
+                  onSelect={() =>
+                    setSelectedService(
+                      selectedService?.id === service.id ? null : service
+                    )
+                  }
+                />
+              ))}
+            </div>
+          )}
         </section>
+
+        {creator.videos && creator.videos.length > 0 && (
+          <section className="mt-10">
+            <h2 className="text-xl font-bold text-olive-900 mb-1">
+              Top Grossing Work
+            </h2>
+            <p className="text-sm text-olive-500 mb-4">
+              Showcase of this creator&apos;s highest earning projects
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {creator.videos.map((video) => (
+                <article
+                  key={video.id}
+                  className="overflow-hidden rounded-2xl border border-olive-200/70 bg-milky-50 shadow-sm"
+                >
+                  <video
+                    src={video.url}
+                    controls
+                    className="w-full aspect-video bg-black object-cover"
+                    preload="metadata"
+                  />
+                  <div className="p-4">
+                    <h3 className="font-semibold text-olive-900">{video.title}</h3>
+                    <p className="mt-1 text-sm font-bold text-olive-600">
+                      {formatPrice(video.earnings)} earned
+                    </p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
 
       {selectedService && (

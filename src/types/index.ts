@@ -7,6 +7,13 @@ export interface Service {
   duration: string;
 }
 
+export interface CreatorVideo {
+  id: string;
+  title: string;
+  url: string;
+  earnings: number;
+}
+
 export interface Creator {
   id: string;
   name: string;
@@ -14,6 +21,7 @@ export interface Creator {
   avatar: string;
   coverImage: string;
   category: string;
+  city: string;
   location: string;
   bio: string;
   rating: number;
@@ -25,6 +33,16 @@ export interface Creator {
   whatsapp: string;
   services: Service[];
   tags: string[];
+  videos?: CreatorVideo[];
+  email?: string;
+}
+
+export interface CreatorAccount {
+  id: string;
+  email: string;
+  password: string;
+  creatorId: string;
+  createdAt: string;
 }
 
 export interface Booking {

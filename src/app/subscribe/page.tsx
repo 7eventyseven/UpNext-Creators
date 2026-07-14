@@ -22,7 +22,7 @@ const plans = [
     id: "pro",
     name: "Pro",
     price: 5000,
-    description: "Boost your visibility on the Plateau",
+    description: "Boost your visibility and get discovered",
     features: [
       "Everything in Free",
       "Pro badge on profile",
@@ -75,7 +75,7 @@ export default function SubscribePage() {
         </h1>
         <p className="mt-3 text-olive-600 leading-relaxed">
           Your subscription is active. You&apos;re now ranked higher and ready to
-          receive more bookings from clients across Jos Plateau.
+          receive more bookings from clients across Nigeria.
         </p>
         <a
           href="/"
@@ -99,7 +99,7 @@ export default function SubscribePage() {
         </h1>
         <p className="mt-3 text-olive-600 max-w-xl mx-auto">
           Subscribe monthly to climb the rankings and appear at the top when
-          clients search for creators on the Jos Plateau.
+          clients search for creators in your city and category.
         </p>
       </div>
 

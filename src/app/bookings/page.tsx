@@ -24,7 +24,7 @@ export default function BookingsPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 py-8">
       <h1 className="text-2xl font-bold text-olive-900 mb-2">My Bookings</h1>
-      <p className="text-olive-600 mb-8">Track your service bookings with Jos Plateau creators.</p>
+      <p className="text-olive-600 mb-8">Track your service bookings with creators across Nigeria.</p>
 
       {bookings.length === 0 ? (
         <div className="rounded-2xl border border-olive-200/70 bg-milky-50 p-12 text-center">

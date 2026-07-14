@@ -29,6 +29,35 @@ export function saveBooking(booking: Booking) {
   safeSet(BOOKINGS_KEY, bookings);
 }
 
+export function updateBookingStatus(
+  id: string,
+  status: Booking["status"]
+): Booking | undefined {
+  const bookings = getBookings();
+  const idx = bookings.findIndex((b) => b.id === id);
+  if (idx < 0) return undefined;
+  bookings[idx] = { ...bookings[idx], status };
+  safeSet(BOOKINGS_KEY, bookings);
+  return bookings[idx];
+}
+
+export function deleteBooking(id: string) {
+  safeSet(
+    BOOKINGS_KEY,
+    getBookings().filter((b) => b.id !== id)
+  );
+}
+
+export function deleteConversation(id: string) {
+  safeSet(
+    CONVERSATIONS_KEY,
+    getConversations().filter((c) => c.id !== id)
+  );
+  const all = safeParse<Record<string, ChatMessage[]>>(MESSAGES_KEY, {});
+  delete all[id];
+  safeSet(MESSAGES_KEY, all);
+}
+
 export function getConversations(): Conversation[] {
   return safeParse<Conversation[]>(CONVERSATIONS_KEY, []);
 }
