@@ -12,8 +12,14 @@ import { MaintenanceNotice } from "@/components/MaintenanceNotice";
 import { AppSettings, defaultAppSettings } from "@/lib/app-settings";
 import { fetchAppSettings } from "@/lib/app-settings-client";
 
+function safeNextPath(raw: string | null): string {
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return "/dashboard";
+  return raw;
+}
+
 export default function SignInPage() {
   const router = useRouter();
+  const [nextPath, setNextPath] = useState("/dashboard");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -21,11 +27,17 @@ export default function SignInPage() {
   const [settings, setSettings] = useState<AppSettings>(defaultAppSettings);
 
   useEffect(() => {
+    setNextPath(
+      safeNextPath(new URLSearchParams(window.location.search).get("next"))
+    );
     fetchAppSettings().then(setSettings);
+  }, []);
+
+  useEffect(() => {
     getLoggedInCreator().then((creator) => {
-      if (creator) router.replace("/dashboard");
+      if (creator) router.replace(nextPath);
     });
-  }, [router]);
+  }, [router, nextPath]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +47,7 @@ export default function SignInPage() {
     try {
       const creator = await creatorSignIn(email.trim(), password);
       if (creator) {
-        router.push("/dashboard");
+        router.push(nextPath);
         return;
       }
       setError("Invalid email or password. Please try again.");

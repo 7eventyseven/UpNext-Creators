@@ -82,7 +82,6 @@ export const siteContentSchema = z.object({
   header: z
     .object({
       navBrowse: z.string().min(1),
-      navMessages: z.string().min(1),
       navBookings: z.string().min(1),
       signInLabel: z.string().min(1),
       registerLabel: z.string().min(1),

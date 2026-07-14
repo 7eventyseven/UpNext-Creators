@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
       passwordHash: await hashPassword(input.password),
       avatar: input.avatar,
       coverImage:
-        "https://images.unsplash.com/photo-1611162617474-5b21e939e113?w=800&q=80",
+        "https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=800&q=80",
       category: input.category,
       city: input.city,
       location: `${input.city}, Nigeria`,

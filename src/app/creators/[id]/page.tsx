@@ -6,7 +6,6 @@ import Link from "next/link";
 import {
   Star,
   MapPin,
-  MessageCircle,
   Phone,
   Crown,
   CheckCircle,
@@ -15,7 +14,6 @@ import {
 import { getCreatorById, getWhatsAppLink, formatPrice } from "@/data/creators";
 import { ServiceCard } from "@/components/ServiceCard";
 import { BookingModal } from "@/components/BookingModal";
-import { getOrCreateConversation } from "@/lib/storage";
 import { Creator, Service } from "@/types";
 
 export default function CreatorProfilePage({
@@ -28,8 +26,10 @@ export default function CreatorProfilePage({
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [showBooking, setShowBooking] = useState(false);
   const [booked, setBooked] = useState(false);
+  const [coverFailed, setCoverFailed] = useState(false);
 
   useEffect(() => {
+    setCoverFailed(false);
     getCreatorById(id).then((c) => setCreator(c ?? null));
   }, [id]);
 
@@ -54,11 +54,6 @@ export default function CreatorProfilePage({
 
   const whatsappMessage = `Hi ${creator.name}, I found you on UpNext Creators and I'd like to inquire about your services.`;
 
-  const handleChat = async () => {
-    await getOrCreateConversation(creator.id, creator.name, creator.avatar);
-    window.location.href = `/chat?creator=${creator.id}`;
-  };
-
   const handleBook = () => {
     if (selectedService) {
       setShowBooking(true);
@@ -67,14 +62,18 @@ export default function CreatorProfilePage({
 
   return (
     <div className="pb-24">
-      <div className="relative h-48 sm:h-64 bg-olive-100">
-        <Image
-          src={creator.coverImage}
-          alt=""
-          fill
-          className="object-cover"
-          priority
-        />
+      <div className="relative h-48 sm:h-64 bg-gradient-to-br from-olive-200 via-olive-100 to-olive-300">
+        {creator.coverImage && !coverFailed && (
+          <Image
+            src={creator.coverImage}
+            alt=""
+            fill
+            className="object-cover"
+            priority
+            unoptimized={creator.coverImage.startsWith("data:")}
+            onError={() => setCoverFailed(true)}
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-olive-900/60 to-olive-900/20" />
         <Link
           href="/"
@@ -157,19 +156,11 @@ export default function CreatorProfilePage({
         </div>
 
         <div className="mt-6 flex flex-wrap gap-3">
-          <button
-            type="button"
-            onClick={handleChat}
-            className="inline-flex items-center gap-2 rounded-xl bg-olive-600 px-5 py-2.5 text-sm font-semibold text-milky-50 hover:bg-olive-700 transition-colors"
-          >
-            <MessageCircle size={18} />
-            Chat
-          </button>
           <a
             href={getWhatsAppLink(creator.whatsapp, whatsappMessage)}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-xl border border-olive-300 bg-milky-50 px-5 py-2.5 text-sm font-semibold text-olive-700 hover:bg-olive-50 transition-colors"
+            className="inline-flex items-center gap-2 rounded-xl bg-olive-600 px-5 py-2.5 text-sm font-semibold text-milky-50 hover:bg-olive-700 transition-colors"
           >
             <Phone size={18} />
             WhatsApp

@@ -28,8 +28,14 @@ import { MaintenanceNotice } from "@/components/MaintenanceNotice";
 import { AppSettings, defaultAppSettings } from "@/lib/app-settings";
 import { fetchAppSettings } from "@/lib/app-settings-client";
 
+function safeNextPath(raw: string | null): string {
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return "/dashboard";
+  return raw;
+}
+
 export default function RegisterPage() {
   const router = useRouter();
+  const [nextPath, setNextPath] = useState("/dashboard");
   const [categories, setCategories] = useState<string[]>([]);
   const categoryOptions = categories.map((c) => ({ value: c, label: c }));
   const [settings, setSettings] = useState<AppSettings>(defaultAppSettings);
@@ -50,15 +56,21 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    setNextPath(
+      safeNextPath(new URLSearchParams(window.location.search).get("next"))
+    );
     fetchAppSettings().then(setSettings);
     getCategories().then((cats) => {
       setCategories(cats);
       setCategory((prev) => prev || cats[0] || "");
     });
+  }, []);
+
+  useEffect(() => {
     getLoggedInCreator().then((creator) => {
-      if (creator) router.replace("/dashboard");
+      if (creator) router.replace(nextPath);
     });
-  }, [router]);
+  }, [router, nextPath]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,7 +131,7 @@ export default function RegisterPage() {
             earnings: Number(v.earnings) || 0,
           })),
       });
-      router.push("/dashboard");
+      router.push(nextPath);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed.");
       setLoading(false);

@@ -6,7 +6,8 @@ Nigeria's creator marketplace — discover, book, and connect with photographers
 
 - **Creator directory** — ranked, searchable list with state and category filters
 - **Service booking** — prices, discounts, and booking management
-- **WhatsApp + chat** — contact creators and message in-app
+- **WhatsApp contact** — reach creators directly on WhatsApp
+- **Progressive Web App** — installable on Android, iOS, Windows, and desktop Chromium
 - **Creator auth + dashboard** — register, sign in, manage profile
 - **Admin panel** — creators, bookings, subscriptions, categories, and editable landing page
 - **PostgreSQL backend** — raw SQL + `pg` + Next.js API routes with JWT cookie auth
@@ -51,7 +52,8 @@ npm run dev
 |---------|---------|
 | `npm run dev` | Next.js dev server |
 | `npm run db:schema` | Apply `db/schema.sql` only |
-| `npm run db:seed` / `db:setup` | Apply schema + seed data |
+| `npm run pwa:icons` | Regenerate PWA icons, splash screens, screenshots |
+| `npm run build` | Production build (includes service worker) |
 
 ## Tech stack
 

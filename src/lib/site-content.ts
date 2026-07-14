@@ -9,7 +9,6 @@ export interface SiteContent {
   };
   header: {
     navBrowse: string;
-    navMessages: string;
     navBookings: string;
     signInLabel: string;
     registerLabel: string;
@@ -49,7 +48,6 @@ export const defaultSiteContent: SiteContent = {
   },
   header: {
     navBrowse: "Browse",
-    navMessages: "Messages",
     navBookings: "Bookings",
     signInLabel: "Sign In",
     registerLabel: "Register",

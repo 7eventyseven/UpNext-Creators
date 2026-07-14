@@ -1,18 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Save, TrendingUp, User, Loader2 } from "lucide-react";
 import {
-  ExternalLink,
-  LogOut,
-  Save,
-  TrendingUp,
-  User,
-  Loader2,
-} from "lucide-react";
-import {
-  creatorSignOut,
   getLoggedInCreator,
   updateCreatorProfile,
 } from "@/lib/creator-auth";
@@ -130,11 +121,6 @@ export default function DashboardPage() {
     }
   };
 
-  const handleSignOut = async () => {
-    await creatorSignOut();
-    router.push("/");
-  };
-
   if (!creator) return null;
 
   const totalEarnings = (creator.videos ?? []).reduce(
@@ -143,29 +129,12 @@ export default function DashboardPage() {
   );
 
   return (
-    <div className="mx-auto max-w-2xl px-4 sm:px-6 py-8">
-      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-olive-900">Creator Dashboard</h1>
-          <p className="text-olive-600">Manage your profile, services, and showcase</p>
-        </div>
-        <div className="flex gap-2">
-          <Link
-            href={`/creators/${creator.id}`}
-            className="inline-flex items-center gap-2 rounded-xl border border-olive-200 px-4 py-2 text-sm font-medium text-olive-700 hover:bg-olive-50"
-          >
-            <ExternalLink size={16} />
-            View Profile
-          </Link>
-          <button
-            type="button"
-            onClick={handleSignOut}
-            className="inline-flex items-center gap-2 rounded-xl border border-olive-200 px-4 py-2 text-sm font-medium text-olive-700 hover:bg-olive-50"
-          >
-            <LogOut size={16} />
-            Sign Out
-          </button>
-        </div>
+    <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-8">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-olive-900">Creator Dashboard</h1>
+        <p className="text-olive-600">
+          Manage your profile, services, and showcase
+        </p>
       </div>
 
       <div className="mb-6 grid gap-4 sm:grid-cols-3">

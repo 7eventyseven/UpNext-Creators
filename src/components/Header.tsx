@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  MessageCircle,
   Home,
   Calendar,
   Crown,
@@ -40,7 +39,6 @@ export function Header() {
   const customerNav = useMemo(
     () => [
       { href: "/", label: content.header.navBrowse, icon: Home },
-      { href: "/chat", label: content.header.navMessages, icon: MessageCircle },
       { href: "/bookings", label: content.header.navBookings, icon: Calendar },
     ],
     [content.header]
@@ -56,15 +54,11 @@ export function Header() {
               label: "My Profile",
               icon: User,
             },
-            {
-              href: "/chat",
-              label: content.header.navMessages,
-              icon: MessageCircle,
-            },
+            { href: "/bookings", label: "Bookings", icon: Calendar },
             { href: "/subscribe", label: "Go Pro", icon: Crown },
           ]
         : [],
-    [creator, content.header.navMessages]
+    [creator]
   );
 
   const navItems = creator ? creatorNav : customerNav;

@@ -213,16 +213,6 @@ export default function AdminLandingPage() {
                 required
               />
             </Field>
-            <Field label="Messages label">
-              <input
-                className={inputClass}
-                value={form.header.navMessages}
-                onChange={(e) =>
-                  update("header", { navMessages: e.target.value })
-                }
-                required
-              />
-            </Field>
             <Field label="Bookings label">
               <input
                 className={inputClass}

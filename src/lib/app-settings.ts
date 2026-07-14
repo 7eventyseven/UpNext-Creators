@@ -39,7 +39,6 @@ export const defaultAppSettings: AppSettings = {
         "Everything in Free",
         "Pro badge on profile",
         "Higher ranking priority",
-        "Integrated chat access",
         "Featured in category lists",
         "Monthly analytics summary",
       ],
