@@ -8,11 +8,13 @@ UpNext Creators connects clients with talented creators across Nigeria. Creators
 
 ## Features
 
-- **Creator directory** — ranked, searchable list with city and category filters
+- **Creator directory** — ranked, searchable list with state and category filters
 - **Service booking** — browse services, see prices (with discounts), and book directly
 - **WhatsApp integration** — one-tap contact via WhatsApp on every creator profile
 - **Subscription ranking** — creators pay monthly (Pro / Premium) to rank at the top
 - **Integrated chat** — direct messaging between clients and creators
+- **Creator registration** — creators can register, upload photos/videos, and set service prices
+- **Admin panel** — manage creators, bookings, subscriptions, and categories
 - **Olive green + milky theme** — warm, earthy palette throughout
 
 ## Getting Started
@@ -23,6 +25,19 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### Admin panel
+
+1. Open [http://localhost:3000/admin](http://localhost:3000/admin)
+2. Sign in with password: `upnext2024`
+
+From the admin dashboard you can:
+
+- View platform stats
+- Add, edit, or delete creators and their services
+- Update booking statuses
+- Assign Free / Pro / Premium subscription tiers
+- Manage service categories
 
 ## Tech Stack
 
@@ -36,10 +51,10 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ```
 src/
-  app/           # Pages (home, creator profile, chat, bookings, subscribe)
+  app/           # Pages (home, creator profile, chat, bookings, admin, auth)
   components/    # Reusable UI components
-  data/          # Mock creator data
-  lib/           # Local storage helpers (bookings, chat)
+  data/          # Seed creator data
+  lib/           # Auth, storage helpers (bookings, chat, creators)
   types/         # TypeScript interfaces
 ```
 
@@ -48,6 +63,4 @@ src/
 - Connect a real database (Supabase, Firebase, or PostgreSQL)
 - Add payment integration (Paystack / Flutterwave for Nigerian subscriptions)
 - Real-time chat with WebSockets or a service like Pusher
-- Creator authentication and dashboard
-- Admin panel for managing listings
-- Expand city coverage beyond launch markets
+- Expand beyond browser localStorage for production

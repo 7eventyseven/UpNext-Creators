@@ -187,6 +187,15 @@ export default function HomePage() {
         </div>
         </div>
       </section>
+
+      <footer className="mt-12 border-t border-olive-200/60 pt-6 pb-2 text-center">
+        <Link
+          href="/admin"
+          className="text-xs font-medium text-olive-400 hover:text-olive-600 transition-colors"
+        >
+          Admin Panel
+        </Link>
+      </footer>
     </div>
   );
 }
