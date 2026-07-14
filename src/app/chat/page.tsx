@@ -17,8 +17,8 @@ import { Conversation, ChatMessage } from "@/types";
 function ChatContent() {
   const searchParams = useSearchParams();
   const creatorParam = searchParams.get("creator");
-  const creators = getAllCreators();
 
+  const [creators, setCreators] = useState<Awaited<ReturnType<typeof getAllCreators>>>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -26,37 +26,48 @@ function ChatContent() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    let convos = getConversations();
+    let cancelled = false;
 
-    if (convos.length === 0) {
-      creators.slice(0, 2).forEach((c) => {
-        getOrCreateConversation(c.id, c.name, c.avatar);
-      });
-      convos = getConversations();
-    }
+    (async () => {
+      const allCreators = await getAllCreators();
+      if (cancelled) return;
+      setCreators(allCreators);
 
-    if (creatorParam) {
-      const creator = creators.find((c) => c.id === creatorParam);
-      if (creator) {
-        const convo = getOrCreateConversation(
-          creator.id,
-          creator.name,
-          creator.avatar
-        );
-        setActiveId(convo.id);
-        convos = getConversations();
+      let convos = await getConversations();
+      if (convos.length === 0 && allCreators.length > 0) {
+        for (const c of allCreators.slice(0, 2)) {
+          await getOrCreateConversation(c.id, c.name, c.avatar);
+        }
+        convos = await getConversations();
       }
-    } else if (convos.length > 0 && !activeId) {
-      setActiveId(convos[0].id);
-    }
 
-    setConversations(convos);
-  }, [creatorParam, activeId]);
+      if (creatorParam) {
+        const creator = allCreators.find((c) => c.id === creatorParam);
+        if (creator) {
+          const convo = await getOrCreateConversation(
+            creator.id,
+            creator.name,
+            creator.avatar
+          );
+          if (!cancelled) setActiveId(convo.id);
+          convos = await getConversations();
+        }
+      } else if (convos.length > 0 && !activeId) {
+        if (!cancelled) setActiveId(convos[0].id);
+      }
+
+      if (!cancelled) setConversations(convos);
+    })().catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [creatorParam]);
 
   useEffect(() => {
-    if (activeId) {
-      setMessages(getMessages(activeId));
-    }
+    if (!activeId) return;
+    getMessages(activeId).then(setMessages).catch(() => undefined);
   }, [activeId]);
 
   useEffect(() => {
@@ -66,27 +77,28 @@ function ChatContent() {
   useEffect(() => {
     if (!activeId) return;
     const interval = setInterval(() => {
-      setMessages(getMessages(activeId));
-      setConversations(getConversations());
-    }, 1000);
+      getMessages(activeId).then(setMessages).catch(() => undefined);
+      getConversations().then(setConversations).catch(() => undefined);
+    }, 3000);
     return () => clearInterval(interval);
   }, [activeId]);
 
   const activeConvo = conversations.find((c) => c.id === activeId);
 
-  const handleSend = (e: React.FormEvent) => {
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || !activeConvo) return;
 
-    sendMessage(
+    const text = input.trim();
+    setInput("");
+    await sendMessage(
       activeConvo.id,
-      input.trim(),
+      text,
       activeConvo.creatorId,
       activeConvo.creatorName
     );
-    setInput("");
-    setMessages(getMessages(activeConvo.id));
-    setConversations(getConversations());
+    setMessages(await getMessages(activeConvo.id));
+    setConversations(await getConversations());
   };
 
   const formatTime = (iso: string) => {
@@ -161,14 +173,14 @@ function ChatContent() {
                 <button
                   key={c.id}
                   type="button"
-                  onClick={() => {
-                    const convo = getOrCreateConversation(
+                  onClick={async () => {
+                    const convo = await getOrCreateConversation(
                       c.id,
                       c.name,
                       c.avatar
                     );
                     setActiveId(convo.id);
-                    setConversations(getConversations());
+                    setConversations(await getConversations());
                   }}
                   className="rounded-full bg-olive-100 px-2.5 py-1 text-xs font-medium text-olive-700 hover:bg-olive-200"
                 >

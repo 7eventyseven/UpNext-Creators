@@ -7,7 +7,6 @@ export {
   getCities,
   saveCreator,
   deleteCreator,
-  resetCreators,
 } from "@/lib/creator-store";
 
 export function formatPrice(amount: number): string {

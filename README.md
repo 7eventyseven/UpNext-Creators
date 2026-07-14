@@ -1,53 +1,70 @@
 # UpNext Creators
 
-An app to push, showcase, and book creators — Nigeria's marketplace for photographers, musicians, makeup artists, designers, and more.
-
-## Vision
-
-UpNext Creators connects clients with talented creators across Nigeria. Creators list their services, set prices (with optional discounts), get ranked, and receive bookings. Jos was the launch market; the platform is built to scale to every city.
+Nigeria's creator marketplace — discover, book, and connect with photographers, musicians, makeup artists, designers, and more.
 
 ## Features
 
-- **Creator directory** — ranked, searchable list with city and category filters
-- **Service booking** — browse services, see prices (with discounts), and book directly
-- **WhatsApp integration** — one-tap contact via WhatsApp on every creator profile
-- **Subscription ranking** — creators pay monthly (Pro / Premium) to rank at the top
-- **Integrated chat** — direct messaging between clients and creators
-- **Olive green + milky theme** — warm, earthy palette throughout
+- **Creator directory** — ranked, searchable list with state and category filters
+- **Service booking** — prices, discounts, and booking management
+- **WhatsApp + chat** — contact creators and message in-app
+- **Creator auth + dashboard** — register, sign in, manage profile
+- **Admin panel** — creators, bookings, subscriptions, categories, and editable landing page
+- **PostgreSQL backend** — raw SQL + `pg` + Next.js API routes with JWT cookie auth
+- **Cloudinary uploads** — profile images and showcase videos via `/api/upload`
 
-## Getting Started
+## Setup
+
+1. Copy env and install deps:
 
 ```bash
+cp .env.example .env
 npm install
+```
+
+2. Start PostgreSQL (or point `DATABASE_URL` at any Postgres instance):
+
+```bash
+docker compose up -d
+```
+
+3. Apply schema + seed data:
+
+```bash
+npm run db:setup
+```
+
+This runs `db/schema.sql` and seeds admin, categories, creators, and landing content.
+
+4. Run the app:
+
+```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+- Site: [http://localhost:3000](http://localhost:3000)
+- Admin: [http://localhost:3000/admin](http://localhost:3000/admin) — `nungseplangnan@gmail.com` / `William`
+- Landing editor: [http://localhost:3000/admin/landing](http://localhost:3000/admin/landing)
 
-## Tech Stack
+## Scripts
 
-- Next.js 15 (App Router)
-- React 19
+| Command | Purpose |
+|---------|---------|
+| `npm run dev` | Next.js dev server |
+| `npm run db:schema` | Apply `db/schema.sql` only |
+| `npm run db:seed` / `db:setup` | Apply schema + seed data |
+
+## Tech stack
+
+- Next.js 15 (App Router) + React 19 + TypeScript
 - Tailwind CSS 4
-- TypeScript
-- Lucide icons
+- PostgreSQL via `pg` (no ORM)
+- jose (JWT) + bcryptjs + zod
 
-## Project Structure
+## Project structure
 
 ```
-src/
-  app/           # Pages (home, creator profile, chat, bookings, subscribe)
-  components/    # Reusable UI components
-  data/          # Mock creator data
-  lib/           # Local storage helpers (bookings, chat)
-  types/         # TypeScript interfaces
+db/              # schema.sql + seed
+src/app/api/     # REST API routes
+src/app/admin/   # Admin UI (includes Landing CMS)
+src/lib/         # pg pool, SQL repository, auth, API client
 ```
-
-## Next Steps
-
-- Connect a real database (Supabase, Firebase, or PostgreSQL)
-- Add payment integration (Paystack / Flutterwave for Nigerian subscriptions)
-- Real-time chat with WebSockets or a service like Pusher
-- Creator authentication and dashboard
-- Admin panel for managing listings
-- Expand city coverage beyond launch markets

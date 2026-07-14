@@ -9,6 +9,7 @@ import {
   Save,
   TrendingUp,
   User,
+  Loader2,
 } from "lucide-react";
 import {
   creatorSignOut,
@@ -39,7 +40,7 @@ const inputClass = authInputClass;
 
 export default function DashboardPage() {
   const router = useRouter();
-  const categories = getCategories();
+  const [categories, setCategories] = useState<string[]>([]);
   const [creator, setCreator] = useState<Creator | null>(null);
   const [name, setName] = useState("");
   const [bio, setBio] = useState("");
@@ -54,34 +55,36 @@ export default function DashboardPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const loggedIn = getLoggedInCreator();
-    if (!loggedIn) {
-      router.replace("/signin");
-      return;
-    }
-    setCreator(loggedIn);
-    setName(loggedIn.name);
-    setBio(loggedIn.bio);
-    setState(loggedIn.city);
-    setCategory(loggedIn.category);
-    setWhatsapp(loggedIn.whatsapp);
-    setAvatar(loggedIn.avatar);
-    setVideos(
-      (loggedIn.videos ?? []).map((v) => ({
-        id: v.id,
-        title: v.title,
-        earnings: String(v.earnings),
-        url: v.url,
-      }))
-    );
-    setServices(
-      loggedIn.services.length > 0
-        ? loggedIn.services.map(serviceToEntry)
-        : [emptyService()]
-    );
+    getCategories().then(setCategories);
+    getLoggedInCreator().then((loggedIn) => {
+      if (!loggedIn) {
+        router.replace("/signin");
+        return;
+      }
+      setCreator(loggedIn);
+      setName(loggedIn.name);
+      setBio(loggedIn.bio);
+      setState(loggedIn.city);
+      setCategory(loggedIn.category);
+      setWhatsapp(loggedIn.whatsapp);
+      setAvatar(loggedIn.avatar);
+      setVideos(
+        (loggedIn.videos ?? []).map((v) => ({
+          id: v.id,
+          title: v.title,
+          earnings: String(v.earnings),
+          url: v.url,
+        }))
+      );
+      setServices(
+        loggedIn.services.length > 0
+          ? loggedIn.services.map(serviceToEntry)
+          : [emptyService()]
+      );
+    });
   }, [router]);
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!creator) return;
 
@@ -107,7 +110,7 @@ export default function DashboardPage() {
     }
 
     try {
-      updateCreatorProfile(creator.id, {
+      const updated = await updateCreatorProfile(creator.id, {
         name: name.trim(),
         bio: bio.trim(),
         city: state,
@@ -119,7 +122,7 @@ export default function DashboardPage() {
         services: parsedServices,
       });
       setMessage("Profile updated successfully.");
-      setCreator(getLoggedInCreator() ?? null);
+      setCreator(updated);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save.");
     } finally {
@@ -127,8 +130,8 @@ export default function DashboardPage() {
     }
   };
 
-  const handleSignOut = () => {
-    creatorSignOut();
+  const handleSignOut = async () => {
+    await creatorSignOut();
     router.push("/");
   };
 
@@ -297,7 +300,11 @@ export default function DashboardPage() {
           disabled={saving}
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-olive-600 py-3 font-semibold text-milky-50 hover:bg-olive-700 disabled:opacity-60"
         >
-          <Save size={18} />
+          {saving ? (
+            <Loader2 size={18} className="animate-spin" />
+          ) : (
+            <Save size={18} />
+          )}
           {saving ? "Saving..." : "Save Changes"}
         </button>
       </form>

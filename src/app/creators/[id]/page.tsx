@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -16,7 +16,7 @@ import { getCreatorById, getWhatsAppLink, formatPrice } from "@/data/creators";
 import { ServiceCard } from "@/components/ServiceCard";
 import { BookingModal } from "@/components/BookingModal";
 import { getOrCreateConversation } from "@/lib/storage";
-import { Service } from "@/types";
+import { Creator, Service } from "@/types";
 
 export default function CreatorProfilePage({
   params,
@@ -24,10 +24,22 @@ export default function CreatorProfilePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const creator = getCreatorById(id);
+  const [creator, setCreator] = useState<Creator | null | undefined>(undefined);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [showBooking, setShowBooking] = useState(false);
   const [booked, setBooked] = useState(false);
+
+  useEffect(() => {
+    getCreatorById(id).then((c) => setCreator(c ?? null));
+  }, [id]);
+
+  if (creator === undefined) {
+    return (
+      <div className="mx-auto max-w-6xl px-4 py-16 text-center text-olive-500">
+        Loading...
+      </div>
+    );
+  }
 
   if (!creator) {
     return (
@@ -42,8 +54,8 @@ export default function CreatorProfilePage({
 
   const whatsappMessage = `Hi ${creator.name}, I found you on UpNext Creators and I'd like to inquire about your services.`;
 
-  const handleChat = () => {
-    getOrCreateConversation(creator.id, creator.name, creator.avatar);
+  const handleChat = async () => {
+    await getOrCreateConversation(creator.id, creator.name, creator.avatar);
     window.location.href = `/chat?creator=${creator.id}`;
   };
 

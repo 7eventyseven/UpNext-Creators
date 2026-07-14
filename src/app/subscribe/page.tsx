@@ -1,67 +1,56 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Crown, Check, Zap, Star, TrendingUp } from "lucide-react";
+import {
+  AppSettings,
+  defaultAppSettings,
+  formatNaira,
+} from "@/lib/app-settings";
+import { fetchAppSettings } from "@/lib/app-settings-client";
 
-const plans = [
-  {
-    id: "free",
-    name: "Free",
-    price: 0,
-    description: "Get listed on UpNext Creators",
-    features: [
-      "Basic profile listing",
-      "Service pricing on profile",
-      "WhatsApp contact link",
-      "Standard ranking position",
-    ],
-    icon: Star,
-    highlighted: false,
-  },
-  {
-    id: "pro",
-    name: "Pro",
-    price: 5000,
-    description: "Boost your visibility and get discovered",
-    features: [
-      "Everything in Free",
-      "Pro badge on profile",
-      "Higher ranking priority",
-      "Integrated chat access",
-      "Featured in category lists",
-      "Monthly analytics summary",
-    ],
-    icon: Zap,
-    highlighted: true,
-  },
-  {
-    id: "premium",
-    name: "Premium",
-    price: 15000,
-    description: "Top of the list, maximum exposure",
-    features: [
-      "Everything in Pro",
-      "Top Creator badge",
-      "#1 priority ranking",
-      "Homepage featured spot",
-      "Discount price highlighting",
-      "Priority customer support",
-      "Verified creator status",
-    ],
-    icon: Crown,
-    highlighted: false,
-  },
-];
+const icons = {
+  free: Star,
+  pro: Zap,
+  premium: Crown,
+} as const;
 
 export default function SubscribePage() {
+  const [settings, setSettings] = useState<AppSettings>(defaultAppSettings);
   const [selected, setSelected] = useState<string | null>(null);
   const [subscribed, setSubscribed] = useState(false);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    fetchAppSettings()
+      .then(setSettings)
+      .finally(() => setReady(true));
+  }, []);
+
+  const plans = (
+    Object.keys(settings.subscriptions) as Array<
+      keyof AppSettings["subscriptions"]
+    >
+  ).map((id) => ({
+    id,
+    ...settings.subscriptions[id],
+    icon: icons[id],
+    highlighted: id === "pro",
+  }));
 
   const handleSubscribe = (planId: string) => {
     if (planId === "free") return;
     setSelected(planId);
     setTimeout(() => setSubscribed(true), 800);
   };
+
+  if (!ready) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-olive-600 border-t-transparent" />
+      </div>
+    );
+  }
 
   if (subscribed && selected) {
     const plan = plans.find((p) => p.id === selected);
@@ -94,10 +83,10 @@ export default function SubscribePage() {
           <TrendingUp size={14} />
           Creator Subscriptions
         </div>
-        <h1 className="text-3xl font-bold text-olive-900">
+        <h1 className="text-2xl sm:text-3xl font-bold text-olive-900">
           Rank Higher, Get More Bookings
         </h1>
-        <p className="mt-3 text-olive-600 max-w-xl mx-auto">
+        <p className="mt-3 text-olive-600 max-w-xl mx-auto text-sm sm:text-base">
           Subscribe monthly to climb the rankings and appear at the top when
           clients search for creators in your city and category.
         </p>
@@ -109,9 +98,9 @@ export default function SubscribePage() {
           return (
             <div
               key={plan.id}
-              className={`relative rounded-2xl border p-6 transition-all ${
+              className={`relative rounded-2xl border p-5 sm:p-6 transition-all ${
                 plan.highlighted
-                  ? "border-olive-500 bg-olive-50 shadow-lg scale-[1.02]"
+                  ? "border-olive-500 bg-olive-50 shadow-lg md:scale-[1.02]"
                   : "border-olive-200/70 bg-milky-50 hover:border-olive-300"
               }`}
             >
@@ -124,7 +113,9 @@ export default function SubscribePage() {
               <div className="flex items-center gap-3 mb-4">
                 <div
                   className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-                    plan.highlighted ? "bg-olive-600 text-milky-50" : "bg-olive-100 text-olive-600"
+                    plan.highlighted
+                      ? "bg-olive-600 text-milky-50"
+                      : "bg-olive-100 text-olive-600"
                   }`}
                 >
                   <Icon size={20} />
@@ -140,8 +131,10 @@ export default function SubscribePage() {
                   <p className="text-3xl font-bold text-olive-900">Free</p>
                 ) : (
                   <p className="text-3xl font-bold text-olive-900">
-                    ₦{plan.price.toLocaleString()}
-                    <span className="text-sm font-normal text-olive-500">/month</span>
+                    {formatNaira(plan.price)}
+                    <span className="text-sm font-normal text-olive-500">
+                      /month
+                    </span>
                   </p>
                 )}
               </div>
@@ -182,7 +175,8 @@ export default function SubscribePage() {
       </div>
 
       <p className="mt-8 text-center text-sm text-olive-500">
-        Subscriptions renew monthly. Cancel anytime. Payment integration coming soon.
+        Subscriptions renew monthly. Cancel anytime. Payment integration coming
+        soon.
       </p>
     </div>
   );

@@ -3,10 +3,16 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Loader2, Plus, Trash2 } from "lucide-react";
 import { getCreatorById, saveCreator } from "@/data/creators";
 import { getCategories } from "@/lib/categories";
 import { StateDropdown } from "@/components/StateDropdown";
+import { ImageUpload, VideoUploadList, VideoEntry } from "@/components/MediaUpload";
+import {
+  processImageUpload,
+  processVideoUpload,
+  uploadLimits,
+} from "@/lib/file-upload";
 import { Creator, Service } from "@/types";
 
 const emptyService = (): Service => ({
@@ -21,8 +27,8 @@ const emptyCreator = (): Creator => ({
   id: `c-${Date.now()}`,
   name: "",
   username: "",
-  avatar: "https://api.dicebear.com/9.x/avataaars/svg?seed=New",
-  coverImage: "https://images.unsplash.com/photo-1611162617474-5b21e939e113?w=800&q=80",
+  avatar: "",
+  coverImage: "",
   category: "Photography",
   city: "Plateau",
   location: "",
@@ -36,6 +42,7 @@ const emptyCreator = (): Creator => ({
   whatsapp: "",
   tags: [],
   services: [emptyService()],
+  videos: [],
 });
 
 function Field({
@@ -67,15 +74,29 @@ export default function CreatorEditPage({
   const [id, setId] = useState<string | null>(null);
   const [form, setForm] = useState<Creator>(emptyCreator());
   const [tagInput, setTagInput] = useState("");
-  const categories = getCategories();
+  const [categories, setCategories] = useState<string[]>([]);
+  const [videos, setVideos] = useState<VideoEntry[]>([]);
+  const [uploadError, setUploadError] = useState("");
+  const [saving, setSaving] = useState(false);
   const isNew = id === "new";
 
   useEffect(() => {
-    params.then(({ id: paramId }) => {
+    getCategories().then(setCategories);
+    params.then(async ({ id: paramId }) => {
       setId(paramId);
       if (paramId !== "new") {
-        const existing = getCreatorById(paramId);
-        if (existing) setForm(existing);
+        const existing = await getCreatorById(paramId);
+        if (existing) {
+          setForm(existing);
+          setVideos(
+            (existing.videos ?? []).map((v) => ({
+              id: v.id,
+              title: v.title,
+              earnings: String(v.earnings),
+              url: v.url,
+            }))
+          );
+        }
       }
     });
   }, [params]);
@@ -110,21 +131,48 @@ export default function CreatorEditPage({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setUploadError("");
+
+    if (!form.avatar) {
+      setUploadError("Please upload an avatar image.");
+      return;
+    }
+    if (!form.coverImage) {
+      setUploadError("Please upload a cover image.");
+      return;
+    }
+
     const tier = form.subscriptionTier;
-    saveCreator({
-      ...form,
-      isSubscribed: tier === "pro" || tier === "premium",
-      location: form.location || `${form.city}, Nigeria`,
-    });
-    router.push("/admin/creators");
+    const completedVideos = videos
+      .filter((v) => v.url && v.title.trim())
+      .map((v) => ({
+        id: v.id,
+        title: v.title.trim(),
+        url: v.url!,
+        earnings: Number(v.earnings) || 0,
+      }));
+
+    setSaving(true);
+    try {
+      await saveCreator({
+        ...form,
+        isSubscribed: tier === "pro" || tier === "premium",
+        location: form.location || `${form.city}, Nigeria`,
+        videos: completedVideos,
+      });
+      router.push("/admin/creators");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Could not save creator");
+      setSaving(false);
+    }
   };
 
   if (!id) return null;
 
   return (
-    <div className="p-6 sm:p-8 max-w-3xl">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-3xl">
       <Link
         href="/admin/creators"
         className="mb-6 inline-flex items-center gap-2 text-sm text-olive-600 hover:text-olive-800"
@@ -202,22 +250,41 @@ export default function CreatorEditPage({
               required
             />
           </Field>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Avatar URL">
-              <input
-                className={inputClass}
-                value={form.avatar}
-                onChange={(e) => update("avatar", e.target.value)}
-              />
-            </Field>
-            <Field label="Cover Image URL">
-              <input
-                className={inputClass}
-                value={form.coverImage}
-                onChange={(e) => update("coverImage", e.target.value)}
-              />
-            </Field>
+        </section>
+
+        <section className="rounded-2xl border border-olive-200/70 bg-milky-50 p-5 space-y-4">
+          <h2 className="font-semibold text-olive-900">Media</h2>
+          <div className="grid gap-6 sm:grid-cols-2">
+            <ImageUpload
+              label="Avatar"
+              value={form.avatar || null}
+              onChange={(url) => update("avatar", url ?? "")}
+              onError={setUploadError}
+              processFile={processImageUpload}
+              hint={`JPG, PNG, or WebP — max ${uploadLimits.maxImageMB} MB`}
+            />
+            <ImageUpload
+              label="Cover image"
+              variant="cover"
+              value={form.coverImage || null}
+              onChange={(url) => update("coverImage", url ?? "")}
+              onError={setUploadError}
+              processFile={processImageUpload}
+              hint={`Wide image works best — max ${uploadLimits.maxImageMB} MB`}
+            />
           </div>
+          <VideoUploadList
+            videos={videos}
+            onChange={setVideos}
+            onError={setUploadError}
+            maxVideos={uploadLimits.maxVideos}
+            processFile={processVideoUpload}
+          />
+          {uploadError && (
+            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+              {uploadError}
+            </p>
+          )}
         </section>
 
         <section className="rounded-2xl border border-olive-200/70 bg-milky-50 p-5 space-y-4">
@@ -424,16 +491,24 @@ export default function CreatorEditPage({
           ))}
         </section>
 
-        <div className="flex gap-3">
+        <div className="flex flex-col-reverse gap-3 sm:flex-row">
           <button
             type="submit"
-            className="rounded-xl bg-olive-600 px-6 py-3 font-semibold text-milky-50 hover:bg-olive-700"
+            disabled={saving}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-olive-600 px-6 py-3 font-semibold text-milky-50 hover:bg-olive-700 disabled:opacity-60"
           >
-            {isNew ? "Create Creator" : "Save Changes"}
+            {saving && <Loader2 size={18} className="animate-spin" />}
+            {saving
+              ? isNew
+                ? "Creating..."
+                : "Saving..."
+              : isNew
+                ? "Create Creator"
+                : "Save Changes"}
           </button>
           <Link
             href="/admin/creators"
-            className="rounded-xl border border-olive-200 px-6 py-3 font-semibold text-olive-700 hover:bg-olive-50"
+            className={`rounded-xl border border-olive-200 px-6 py-3 text-center font-semibold text-olive-700 hover:bg-olive-50 ${saving ? "pointer-events-none opacity-60" : ""}`}
           >
             Cancel
           </Link>

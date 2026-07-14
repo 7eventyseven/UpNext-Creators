@@ -23,18 +23,22 @@ import {
 } from "@/components/ServiceList";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { AuthSection, authInputClass, authLabelClass } from "@/components/auth/AuthSection";
+import { MaintenanceNotice } from "@/components/MaintenanceNotice";
+import { AppSettings, defaultAppSettings } from "@/lib/app-settings";
+import { fetchAppSettings } from "@/lib/app-settings-client";
 
 export default function RegisterPage() {
   const router = useRouter();
-  const categories = getCategories();
+  const [categories, setCategories] = useState<string[]>([]);
   const categoryOptions = categories.map((c) => ({ value: c, label: c }));
+  const [settings, setSettings] = useState<AppSettings>(defaultAppSettings);
 
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [category, setCategory] = useState(categories[0] ?? "");
+  const [category, setCategory] = useState("");
   const [state, setState] = useState<string>(nigeriaStates[0]);
   const [bio, setBio] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -45,15 +49,24 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (getLoggedInCreator()) {
-      router.replace("/dashboard");
-    }
+    fetchAppSettings().then(setSettings);
+    getCategories().then((cats) => {
+      setCategories(cats);
+      setCategory((prev) => prev || cats[0] || "");
+    });
+    getLoggedInCreator().then((creator) => {
+      if (creator) router.replace("/dashboard");
+    });
   }, [router]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
+    if (settings.maintenanceMode) {
+      setError(settings.maintenanceMessage);
+      return;
+    }
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
       return;
@@ -85,7 +98,7 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      registerCreator({
+      await registerCreator({
         name: name.trim(),
         username: username.trim(),
         email: email.trim(),
@@ -139,6 +152,8 @@ export default function RegisterPage() {
           Fill in your details below to get listed on UpNext
         </p>
       </div>
+
+      <MaintenanceNotice settings={settings} />
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <AuthSection
@@ -304,7 +319,7 @@ export default function RegisterPage() {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || settings.maintenanceMode}
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-olive-600 py-3.5 font-semibold text-milky-50 shadow-sm hover:bg-olive-700 hover:shadow-md transition-all disabled:opacity-60"
         >
           <UserPlus size={18} />

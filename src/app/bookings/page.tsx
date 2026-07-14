@@ -18,7 +18,7 @@ export default function BookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
 
   useEffect(() => {
-    setBookings(getBookings());
+    getBookings().then(setBookings).catch(() => undefined);
   }, []);
 
   return (

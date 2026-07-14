@@ -17,19 +17,21 @@ function CreatorsContent() {
   const router = useRouter();
   const [creators, setCreators] = useState<Creator[]>([]);
 
-  const load = () => setCreators(getAllCreators());
+  const load = async () => {
+    setCreators(await getAllCreators());
+  };
 
   useEffect(() => {
-    load();
+    load().catch(() => undefined);
     if (searchParams.get("new") === "1") {
       router.replace("/admin/creators/new");
     }
   }, [searchParams, router]);
 
-  const handleDelete = (id: string, name: string) => {
+  const handleDelete = async (id: string, name: string) => {
     if (confirm(`Delete ${name}? This cannot be undone.`)) {
-      deleteCreator(id);
-      load();
+      await deleteCreator(id);
+      await load();
     }
   };
 

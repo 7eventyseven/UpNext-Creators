@@ -10,47 +10,55 @@ import {
   defaultCategories,
 } from "@/lib/categories";
 import { getAllCreators } from "@/data/creators";
+import { Creator } from "@/types";
 
 export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState<string[]>([]);
+  const [creators, setCreators] = useState<Creator[]>([]);
   const [newCategory, setNewCategory] = useState("");
 
-  const load = () => setCategories(getCategories());
+  const load = async () => {
+    const [cats, allCreators] = await Promise.all([
+      getCategories(),
+      getAllCreators(),
+    ]);
+    setCategories(cats);
+    setCreators(allCreators);
+  };
 
   useEffect(() => {
-    load();
+    load().catch(() => undefined);
   }, []);
 
-  const handleAdd = (e: React.FormEvent) => {
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    addCategory(newCategory);
-    setNewCategory("");
-    load();
-  };
-
-  const handleRemove = (name: string) => {
-    const inUse = getAllCreators().some((c) => c.category === name);
-    if (inUse) {
-      alert(
-        `Cannot remove "${name}" — creators are still assigned to this category.`
-      );
-      return;
-    }
-    if (confirm(`Remove category "${name}"?`)) {
-      removeCategory(name);
-      load();
+    try {
+      await addCategory(newCategory);
+      setNewCategory("");
+      await load();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to add category");
     }
   };
 
-  const handleReset = () => {
-    if (confirm("Reset categories to defaults?")) {
-      resetCategories();
-      load();
+  const handleRemove = async (name: string) => {
+    if (!confirm(`Remove category "${name}"?`)) return;
+    try {
+      await removeCategory(name);
+      await load();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to remove category");
     }
+  };
+
+  const handleReset = async () => {
+    if (!confirm("Reset categories to defaults?")) return;
+    await resetCategories();
+    await load();
   };
 
   const creatorCount = (cat: string) =>
-    getAllCreators().filter((c) => c.category === cat).length;
+    creators.filter((c) => c.category === cat).length;
 
   return (
     <div className="p-6 sm:p-8 max-w-2xl">

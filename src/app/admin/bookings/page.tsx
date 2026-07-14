@@ -34,21 +34,24 @@ export default function AdminBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [filter, setFilter] = useState<Booking["status"] | "all">("all");
 
-  const load = () => setBookings(getBookings());
-
-  useEffect(() => {
-    load();
-  }, []);
-
-  const handleStatusChange = (id: string, status: Booking["status"]) => {
-    updateBookingStatus(id, status);
-    load();
+  const load = async () => {
+    const list = await getBookings();
+    setBookings(list);
   };
 
-  const handleDelete = (id: string) => {
+  useEffect(() => {
+    load().catch(() => undefined);
+  }, []);
+
+  const handleStatusChange = async (id: string, status: Booking["status"]) => {
+    await updateBookingStatus(id, status);
+    await load();
+  };
+
+  const handleDelete = async (id: string) => {
     if (confirm("Delete this booking?")) {
-      deleteBooking(id);
-      load();
+      await deleteBooking(id);
+      await load();
     }
   };
 
