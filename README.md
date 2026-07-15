@@ -61,7 +61,7 @@ npm run dev
 - Tailwind CSS 4
 - PostgreSQL via `pg` (no ORM)
 - jose (JWT) + bcryptjs + zod
-
+c
 ## Project structure
 
 ```

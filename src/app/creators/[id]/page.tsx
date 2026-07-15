@@ -11,7 +11,7 @@ import {
   CheckCircle,
   ArrowLeft,
 } from "lucide-react";
-import { getCreatorById, getWhatsAppLink, formatPrice } from "@/data/creators";
+import { getCreatorById, getWhatsAppLink, formatWhatsAppNumber, formatPrice } from "@/data/creators";
 import { ServiceCard } from "@/components/ServiceCard";
 import { BookingModal } from "@/components/BookingModal";
 import { Creator, Service } from "@/types";
@@ -156,15 +156,18 @@ export default function CreatorProfilePage({
         </div>
 
         <div className="mt-6 flex flex-wrap gap-3">
-          <a
-            href={getWhatsAppLink(creator.whatsapp, whatsappMessage)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-xl bg-olive-600 px-5 py-2.5 text-sm font-semibold text-milky-50 hover:bg-olive-700 transition-colors"
-          >
-            <Phone size={18} />
-            WhatsApp
-          </a>
+          {creator.whatsapp ? (
+            <a
+              href={getWhatsAppLink(creator.whatsapp, whatsappMessage)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-xl bg-olive-600 px-5 py-2.5 text-sm font-semibold text-milky-50 hover:bg-olive-700 transition-colors"
+              aria-label={`Message ${creator.name} on WhatsApp`}
+            >
+              <Phone size={18} />
+              {formatWhatsAppNumber(creator.whatsapp)}
+            </a>
+          ) : null}
         </div>
 
         {booked && (
