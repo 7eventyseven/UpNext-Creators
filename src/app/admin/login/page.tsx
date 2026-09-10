@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Lock, Shield } from "lucide-react";
+import { ArrowLeft, Mail, Shield } from "lucide-react";
 import { adminLogin } from "@/lib/admin-auth";
+import { PasswordInput } from "@/components/auth/PasswordInput";
 
 export default function AdminLoginPage() {
   const router = useRouter();
+  const [email, setEmail] = useState("nungseplangnan@gmail.com");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -16,11 +19,11 @@ export default function AdminLoginPage() {
     setLoading(true);
     setError("");
 
-    const ok = await adminLogin(password);
+    const ok = await adminLogin(password, email.trim());
     if (ok) {
       router.replace("/admin");
     } else {
-      setError("Incorrect password. Try again.");
+      setError("Incorrect email or password. Try again.");
       setLoading(false);
     }
   };
@@ -28,6 +31,14 @@ export default function AdminLoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-olive-900 via-olive-800 to-olive-950 px-4">
       <div className="w-full max-w-md rounded-2xl border border-olive-700/50 bg-milky-50 p-8 shadow-xl">
+        <Link
+          href="/"
+          className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-olive-600 hover:text-olive-800"
+        >
+          <ArrowLeft size={16} />
+          Back to site
+        </Link>
+
         <div className="mb-6 text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-olive-600 text-milky-50">
             <Shield size={28} />
@@ -41,26 +52,44 @@ export default function AdminLoginPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label
+              htmlFor="email"
+              className="mb-1.5 block text-sm font-medium text-olive-700"
+            >
+              Email
+            </label>
+            <div className="relative">
+              <Mail
+                size={16}
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-olive-400"
+              />
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Admin email"
+                className="w-full rounded-xl border border-olive-200 bg-milky-50 py-3 pl-10 pr-4 text-olive-900 placeholder:text-olive-400 focus:border-olive-500 focus:outline-none focus:ring-2 focus:ring-olive-200"
+                required
+              />
+            </div>
+          </div>
+
+          <div>
+            <label
               htmlFor="password"
               className="mb-1.5 block text-sm font-medium text-olive-700"
             >
               Password
             </label>
-            <div className="relative">
-              <Lock
-                size={16}
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-olive-400"
-              />
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter admin password"
-                className="w-full rounded-xl border border-olive-200 bg-milky-50 py-3 pl-10 pr-4 text-olive-900 placeholder:text-olive-400 focus:border-olive-500 focus:outline-none focus:ring-2 focus:ring-olive-200"
-                required
-              />
-            </div>
+            <PasswordInput
+              id="password"
+              showLockIcon
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter admin password"
+              className="w-full rounded-xl border border-olive-200 bg-milky-50 py-3 pl-10 pr-10 text-olive-900 placeholder:text-olive-400 focus:border-olive-500 focus:outline-none focus:ring-2 focus:ring-olive-200"
+              required
+            />
           </div>
 
           {error && (
@@ -77,10 +106,6 @@ export default function AdminLoginPage() {
             {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
-
-        <p className="mt-6 text-center text-xs text-olive-500">
-          Default password: <code className="text-olive-700">upnext2024</code>
-        </p>
       </div>
     </div>
   );

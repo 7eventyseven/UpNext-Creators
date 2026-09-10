@@ -10,6 +10,7 @@ interface ImageUploadProps {
   onError: (message: string) => void;
   processFile: (file: File) => Promise<string>;
   hint?: string;
+  variant?: "avatar" | "cover";
 }
 
 export function ImageUpload({
@@ -19,6 +20,7 @@ export function ImageUpload({
   onError,
   processFile,
   hint,
+  variant = "avatar",
 }: ImageUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
@@ -36,16 +38,22 @@ export function ImageUpload({
     }
   };
 
+  const isCover = variant === "cover";
+
   return (
     <div>
       <p className="mb-1.5 text-sm font-medium text-olive-700">{label}</p>
       {value ? (
-        <div className="relative inline-block">
+        <div className={`relative ${isCover ? "w-full" : "inline-block"}`}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={value}
             alt="Upload preview"
-            className="h-32 w-32 rounded-2xl object-cover border border-olive-200"
+            className={
+              isCover
+                ? "h-36 w-full rounded-2xl object-cover border border-olive-200"
+                : "h-32 w-32 rounded-2xl object-cover border border-olive-200"
+            }
           />
           <button
             type="button"
@@ -54,20 +62,32 @@ export function ImageUpload({
           >
             <X size={14} />
           </button>
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            disabled={loading}
+            className="absolute bottom-2 left-2 rounded-lg bg-olive-900/80 px-2.5 py-1 text-xs font-medium text-milky-50 hover:bg-olive-900"
+          >
+            {loading ? "Uploading..." : "Replace"}
+          </button>
         </div>
       ) : (
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={loading}
-          className="flex h-32 w-full max-w-xs flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-olive-300 bg-olive-50/50 text-olive-600 hover:border-olive-500 hover:bg-olive-50 transition-colors"
+          className={`flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-olive-300 bg-olive-50/50 text-olive-600 hover:border-olive-500 hover:bg-olive-50 transition-colors ${
+            isCover ? "h-36 w-full" : "h-32 w-full max-w-xs"
+          }`}
         >
           {loading ? (
             <span className="text-sm">Uploading...</span>
           ) : (
             <>
               <ImageIcon size={28} className="text-olive-400" />
-              <span className="text-sm font-medium">Click to upload photo</span>
+              <span className="text-sm font-medium">
+                {isCover ? "Click to upload cover image" : "Click to upload photo"}
+              </span>
             </>
           )}
         </button>
@@ -107,6 +127,8 @@ export function VideoUploadList({
   maxVideos,
   processFile,
 }: VideoUploadListProps) {
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
+
   const addVideo = () => {
     if (videos.length >= maxVideos) return;
     onChange([
@@ -125,11 +147,14 @@ export function VideoUploadList({
 
   const handleVideoFile = async (id: string, file: File | undefined) => {
     if (!file) return;
+    setUploadingId(id);
     try {
       const url = await processFile(file);
       updateVideo(id, { url, fileName: file.name });
     } catch (err) {
       onError(err instanceof Error ? err.message : "Video upload failed.");
+    } finally {
+      setUploadingId(null);
     }
   };
 
@@ -219,13 +244,14 @@ export function VideoUploadList({
               </button>
             </div>
           ) : (
-            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-olive-300 py-6 text-sm text-olive-600 hover:bg-olive-50">
+            <label className={`flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-olive-300 py-6 text-sm text-olive-600 hover:bg-olive-50 ${uploadingId === video.id ? "opacity-60 pointer-events-none" : ""}`}>
               <Upload size={16} />
-              Choose video file
+              {uploadingId === video.id ? "Uploading to Cloudinary..." : "Choose video file"}
               <input
                 type="file"
                 accept="video/*"
                 className="hidden"
+                disabled={uploadingId === video.id}
                 onChange={(e) => handleVideoFile(video.id, e.target.files?.[0])}
               />
             </label>

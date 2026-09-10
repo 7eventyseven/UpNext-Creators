@@ -5,11 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ExternalLink,
+  Inbox,
+  Loader2,
   LogOut,
   Save,
   TrendingUp,
   User,
-  Inbox,
 } from "lucide-react";
 import {
   creatorSignOut,
@@ -41,7 +42,7 @@ const inputClass = authInputClass;
 
 export default function DashboardPage() {
   const router = useRouter();
-  const categories = getCategories();
+  const [categories, setCategories] = useState<string[]>([]);
   const [creator, setCreator] = useState<Creator | null>(null);
   const [name, setName] = useState("");
   const [bio, setBio] = useState("");
@@ -56,8 +57,8 @@ export default function DashboardPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    void (async () => {
-      const loggedIn = await getLoggedInCreator();
+    getCategories().then(setCategories);
+    getLoggedInCreator().then((loggedIn) => {
       if (!loggedIn) {
         router.replace("/signin");
         return;
@@ -82,7 +83,7 @@ export default function DashboardPage() {
           ? loggedIn.services.map(serviceToEntry)
           : [emptyService()]
       );
-    })();
+    });
   }, [router]);
 
   const handleSave = async (e: React.FormEvent) => {
@@ -111,7 +112,7 @@ export default function DashboardPage() {
     }
 
     try {
-      await updateCreatorProfile(creator.id, {
+      const updated = await updateCreatorProfile(creator.id, {
         name: name.trim(),
         bio: bio.trim(),
         city: state,
@@ -123,7 +124,7 @@ export default function DashboardPage() {
         services: parsedServices,
       });
       setMessage("Profile updated successfully.");
-      setCreator((await getLoggedInCreator()) ?? null);
+      setCreator(updated);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save.");
     } finally {
@@ -131,8 +132,8 @@ export default function DashboardPage() {
     }
   };
 
-  const handleSignOut = () => {
-    creatorSignOut();
+  const handleSignOut = async () => {
+    await creatorSignOut();
     clearAppRole();
     router.push("/");
   };
@@ -145,11 +146,13 @@ export default function DashboardPage() {
   );
 
   return (
-    <div className="mx-auto max-w-2xl px-4 sm:px-6 py-8">
+    <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-8">
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-olive-900">Creator Dashboard</h1>
-          <p className="text-olive-600">Manage your profile, services, and showcase</p>
+          <p className="text-olive-600">
+            Manage your profile, services, and showcase
+          </p>
         </div>
         <div className="flex gap-2">
           <Link
@@ -309,7 +312,11 @@ export default function DashboardPage() {
           disabled={saving}
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-olive-600 py-3 font-semibold text-milky-50 hover:bg-olive-700 disabled:opacity-60"
         >
-          <Save size={18} />
+          {saving ? (
+            <Loader2 size={18} className="animate-spin" />
+          ) : (
+            <Save size={18} />
+          )}
           {saving ? "Saving..." : "Save Changes"}
         </button>
       </form>

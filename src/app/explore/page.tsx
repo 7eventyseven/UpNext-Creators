@@ -6,8 +6,8 @@ import { Search, Filter, MapPin, ArrowLeft } from "lucide-react";
 import { CreatorCard } from "@/components/CreatorCard";
 import { FilterChip } from "@/components/FilterChip";
 import { StateDropdown } from "@/components/StateDropdown";
-import { getSortedCreators, fetchCreators } from "@/data/creators";
-import { getCategories, defaultCategories, fetchCategories } from "@/lib/categories";
+import { getSortedCreators } from "@/data/creators";
+import { getCategories, defaultCategories } from "@/lib/categories";
 import type { Creator } from "@/types";
 
 export default function ExplorePage() {
@@ -18,19 +18,19 @@ export default function ExplorePage() {
     "All",
     ...defaultCategories,
   ]);
-  const [allCreators, setAllCreators] = useState<Creator[]>(getSortedCreators());
+  const [allCreators, setAllCreators] = useState<Creator[]>([]);
 
   useEffect(() => {
     void (async () => {
       try {
         const [cats, creators] = await Promise.all([
-          fetchCategories(),
-          fetchCreators(true),
+          getCategories(),
+          getSortedCreators(),
         ]);
         setCategories(["All", ...cats]);
         setAllCreators(creators);
       } catch {
-        setCategories(["All", ...getCategories()]);
+        setCategories(["All", ...defaultCategories]);
       }
     })();
   }, []);

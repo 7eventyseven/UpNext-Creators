@@ -12,15 +12,24 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
   const isLoginPage = pathname === "/admin/login";
 
   useEffect(() => {
-    const loggedIn = isAdminLoggedIn();
+    let cancelled = false;
 
-    if (!loggedIn && !isLoginPage) {
-      router.replace("/admin/login");
-    } else if (loggedIn && isLoginPage) {
-      router.replace("/admin");
-    } else {
-      setReady(true);
-    }
+    (async () => {
+      const loggedIn = await isAdminLoggedIn();
+      if (cancelled) return;
+
+      if (!loggedIn && !isLoginPage) {
+        router.replace("/admin/login");
+      } else if (loggedIn && isLoginPage) {
+        router.replace("/admin");
+      } else {
+        setReady(true);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [pathname, router, isLoginPage]);
 
   if (!ready) {

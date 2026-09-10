@@ -10,28 +10,33 @@ import {
   Tags,
   LogOut,
   ExternalLink,
+  PanelTop,
+  Settings,
 } from "lucide-react";
 import { adminLogout } from "@/lib/admin-auth";
 
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { href: "/admin/landing", label: "Landing Page", icon: PanelTop },
   { href: "/admin/creators", label: "Creators", icon: Users },
   { href: "/admin/bookings", label: "Bookings", icon: Calendar },
   { href: "/admin/subscriptions", label: "Subscriptions", icon: Crown },
   { href: "/admin/categories", label: "Categories", icon: Tags },
+  { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
-export function AdminSidebar() {
+export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
 
-  const handleLogout = () => {
-    adminLogout();
+  const handleLogout = async () => {
+    await adminLogout();
+    onNavigate?.();
     router.push("/admin/login");
   };
 
   return (
-    <aside className="flex w-64 shrink-0 flex-col border-r border-olive-800 bg-olive-900 text-milky-100">
+    <aside className="flex h-full w-64 shrink-0 flex-col border-r border-olive-800 bg-olive-900 text-milky-100">
       <div className="border-b border-olive-800 px-5 py-5">
         <p className="text-lg font-bold tracking-tight text-milky-50">UpNext</p>
         <p className="text-[10px] font-medium tracking-[0.18em] text-olive-400 uppercase">
@@ -39,13 +44,14 @@ export function AdminSidebar() {
         </p>
       </div>
 
-      <nav className="flex-1 space-y-1 px-3 py-4">
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
         {navItems.map(({ href, label, icon: Icon, exact }) => {
           const active = exact ? pathname === href : pathname.startsWith(href);
           return (
             <Link
               key={href}
               href={href}
+              onClick={onNavigate}
               className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                 active
                   ? "bg-olive-700 text-milky-50"
@@ -62,6 +68,7 @@ export function AdminSidebar() {
       <div className="border-t border-olive-800 px-3 py-4 space-y-1">
         <Link
           href="/"
+          onClick={onNavigate}
           className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-olive-300 hover:bg-olive-800 hover:text-milky-50"
         >
           <ExternalLink size={18} />

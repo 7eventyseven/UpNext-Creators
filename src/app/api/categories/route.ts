@@ -1,59 +1,59 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { jsonError, requireAdmin } from "@/lib/auth-server";
+import { defaultCategories } from "@/lib/categories";
+import {
+  countCreatorsByCategory,
+  createCategories,
+  deleteAllCategories,
+  deleteCategoryByName,
+  listCategories,
+  upsertCategory,
+} from "@/lib/repository";
+import { NextRequest } from "next/server";
+import { z } from "zod";
 
 export async function GET() {
-  const categories = await prisma.category.findMany({
-    orderBy: { name: "asc" },
-  });
-  return NextResponse.json(categories.map((c) => c.name));
+  const categories = await listCategories();
+  return Response.json({ categories: categories.map((c) => c.name) });
 }
 
-export async function POST(request: Request) {
-  const body = (await request.json()) as { name?: string };
-  const name = body.name?.trim();
+export async function POST(req: NextRequest) {
+  const admin = await requireAdmin(req);
+  if (!admin) return jsonError("Unauthorized", 401);
 
-  if (!name) {
-    return NextResponse.json({ error: "name is required" }, { status: 400 });
+  const body = await req.json().catch(() => null);
+  const action = body?.action as string | undefined;
+
+  if (action === "reset") {
+    await deleteAllCategories();
+    await createCategories(defaultCategories);
+    const categories = await listCategories();
+    return Response.json({ categories: categories.map((c) => c.name) });
   }
 
-  const created = await prisma.category.upsert({
-    where: { name },
-    update: {},
-    create: { name },
-  });
+  const parsed = z.object({ name: z.string().min(1) }).safeParse(body);
+  if (!parsed.success) return jsonError("Category name is required");
 
-  return NextResponse.json(created.name, { status: 201 });
+  await upsertCategory(parsed.data.name.trim());
+  const categories = await listCategories();
+  return Response.json({ categories: categories.map((c) => c.name) }, { status: 201 });
 }
 
-export async function PUT(request: Request) {
-  const body = (await request.json()) as { categories?: string[] };
-  const categories = body.categories ?? [];
+export async function DELETE(req: NextRequest) {
+  const admin = await requireAdmin(req);
+  if (!admin) return jsonError("Unauthorized", 401);
 
-  await prisma.category.deleteMany();
-  if (categories.length > 0) {
-    await prisma.category.createMany({
-      data: categories.map((name) => ({ name })),
-    });
+  const { searchParams } = new URL(req.url);
+  const name = searchParams.get("name");
+  if (!name) return jsonError("Category name is required");
+
+  const inUse = await countCreatorsByCategory(name);
+  if (inUse > 0) {
+    return jsonError(
+      `Cannot remove "${name}" — creators are still assigned to this category.`
+    );
   }
 
-  const refreshed = await prisma.category.findMany({
-    orderBy: { name: "asc" },
-  });
-  return NextResponse.json(refreshed.map((c) => c.name));
-}
-
-export async function DELETE(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const name = searchParams.get("name")?.trim();
-
-  if (!name) {
-    return NextResponse.json({ error: "name is required" }, { status: 400 });
-  }
-
-  try {
-    await prisma.category.delete({ where: { name } });
-    return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json({ error: "Category not found" }, { status: 404 });
-  }
+  await deleteCategoryByName(name);
+  const categories = await listCategories();
+  return Response.json({ categories: categories.map((c) => c.name) });
 }

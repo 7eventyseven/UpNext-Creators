@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  MessageCircle,
   Calendar,
   Crown,
   Menu,
@@ -16,6 +15,7 @@ import {
   FileText,
   Compass,
   Home,
+  LogOut,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { Logo } from "@/components/Logo";
@@ -27,16 +27,24 @@ import {
   getClient,
 } from "@/lib/client-auth";
 import { Creator } from "@/types";
+import { defaultSiteContent, SiteContent } from "@/lib/site-content";
+import { fetchSiteContent } from "@/lib/site-content-client";
+import { AppSettings, defaultAppSettings } from "@/lib/app-settings";
+import { fetchAppSettings } from "@/lib/app-settings-client";
 
 export function Header() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [creator, setCreator] = useState<Creator | null>(null);
   const [isClient, setIsClient] = useState(false);
+  const [content, setContent] = useState<SiteContent>(defaultSiteContent);
+  const [settings, setSettings] = useState<AppSettings>(defaultAppSettings);
 
   useEffect(() => {
-    void getLoggedInCreator().then((c) => setCreator(c ?? null));
+    getLoggedInCreator().then((c) => setCreator(c ?? null));
     setIsClient(getAppRole() === "client" && Boolean(getClient()));
+    fetchSiteContent().then(setContent);
+    fetchAppSettings().then(setSettings);
   }, [pathname]);
 
   const navItems = useMemo(() => {
@@ -65,9 +73,9 @@ export function Header() {
 
   const homeHref = creator ? "/dashboard" : isClient ? "/client" : "/";
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
     if (creator) {
-      creatorSignOut();
+      await creatorSignOut();
       setCreator(null);
     }
     clearClient();
@@ -77,9 +85,20 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-olive-200/60 bg-milky-100/90 backdrop-blur-md transition-shadow duration-300">
+      {settings.maintenanceMode && !creator && (
+        <div className="bg-amber-500 px-4 py-2 text-center text-xs sm:text-sm font-medium text-olive-950">
+          Maintenance mode — creator sign in and registration are temporarily
+          unavailable.
+        </div>
+      )}
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
         <Link href={homeHref} className="flex shrink-0 items-center">
-          <Logo size="md" variant="full" />
+          <Logo
+            size="md"
+            variant="full"
+            primary={content.brand.logoPrimary}
+            secondary={content.brand.logoSecondary}
+          />
         </Link>
 
         <nav className="hidden md:flex items-center gap-1">
@@ -107,33 +126,41 @@ export function Header() {
 
         <div className="flex items-center gap-2">
           {creator || isClient ? (
-            <div className="hidden sm:flex items-center gap-2">
-              {creator && (
-                <>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={creator.avatar}
-                    alt=""
-                    className="h-8 w-8 rounded-full object-cover border border-olive-200"
-                  />
-                  <span className="text-sm font-medium text-olive-700 max-w-[100px] truncate">
-                    {creator.name.split(" ")[0]}
+            <>
+              <div className="hidden sm:flex items-center gap-2">
+                {creator && (
+                  <>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={creator.avatar}
+                      alt=""
+                      className="h-8 w-8 rounded-full object-cover border border-olive-200"
+                    />
+                    <span className="text-sm font-medium text-olive-700 max-w-[100px] truncate">
+                      {creator.name.split(" ")[0]}
+                    </span>
+                  </>
+                )}
+                {isClient && !creator && (
+                  <span className="text-sm font-medium text-olive-700">
+                    {getClient()?.name.split(" ")[0]}
                   </span>
-                </>
-              )}
-              {isClient && !creator && (
-                <span className="text-sm font-medium text-olive-700">
-                  {getClient()?.name.split(" ")[0]}
-                </span>
-              )}
+                )}
+              </div>
               <button
                 type="button"
                 onClick={handleSignOut}
-                className="rounded-lg px-3 py-2 text-sm font-medium text-olive-600 hover:bg-olive-100"
+                className="inline-flex items-center gap-1.5 rounded-lg px-2.5 sm:px-3 py-2 text-sm font-medium text-olive-600 hover:bg-olive-100"
+                aria-label={content.header.signOutLabel}
               >
-                Sign Out
+                <LogOut size={16} />
+                <span className="hidden sm:inline">{content.header.signOutLabel}</span>
               </button>
-            </div>
+            </>
+          ) : settings.maintenanceMode ? (
+            <span className="hidden sm:inline text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              Auth paused
+            </span>
           ) : (
             <div className="hidden sm:flex items-center gap-2">
               <Link
@@ -197,8 +224,13 @@ export function Header() {
                 }}
                 className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-olive-700 hover:bg-olive-100"
               >
-                Sign Out
+                <LogOut size={18} />
+                {content.header.signOutLabel}
               </button>
+            ) : settings.maintenanceMode ? (
+              <p className="rounded-lg bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
+                Sign in and registration are paused during maintenance.
+              </p>
             ) : (
               <>
                 <Link
@@ -206,6 +238,7 @@ export function Header() {
                   onClick={() => setMobileOpen(false)}
                   className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-olive-700 hover:bg-olive-100"
                 >
+                  <LogIn size={18} />
                   Creative sign in
                 </Link>
                 <Link
@@ -213,6 +246,7 @@ export function Header() {
                   onClick={() => setMobileOpen(false)}
                   className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium bg-olive-600 text-milky-50"
                 >
+                  <UserPlus size={18} />
                   Need a creative
                 </Link>
               </>

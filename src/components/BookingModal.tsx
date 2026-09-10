@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, Calendar, Clock, User, Phone, MessageSquare } from "lucide-react";
+import { X, Calendar, Clock, User, Phone, MessageSquare, Loader2 } from "lucide-react";
 import { Creator, Service } from "@/types";
 import { formatPrice } from "@/data/creators";
 import { saveBooking } from "@/lib/storage";
@@ -42,25 +42,25 @@ export function BookingModal({
 
     setSubmitting(true);
 
-    saveBooking({
-      id: `booking-${Date.now()}`,
-      creatorId: creator.id,
-      creatorName: creator.name,
-      serviceId: service.id,
-      serviceName: service.name,
-      price,
-      date: form.date,
-      time: form.time,
-      clientName: form.clientName,
-      clientPhone: form.clientPhone,
-      notes: form.notes,
-      status: "pending",
-      createdAt: new Date().toISOString(),
-    });
-
-    setSubmitting(false);
-    onSuccess();
-    onClose();
+    try {
+      await saveBooking({
+        creatorId: creator.id,
+        creatorName: creator.name,
+        serviceId: service.id,
+        serviceName: service.name,
+        price,
+        date: form.date,
+        time: form.time,
+        clientName: form.clientName,
+        clientPhone: form.clientPhone,
+        notes: form.notes,
+      });
+      onSuccess();
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not create booking.");
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -167,8 +167,9 @@ export function BookingModal({
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-xl bg-olive-600 py-3 font-semibold text-milky-50 transition-colors hover:bg-olive-700 disabled:opacity-60"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-olive-600 py-3 font-semibold text-milky-50 transition-colors hover:bg-olive-700 disabled:opacity-60"
           >
+            {submitting && <Loader2 size={18} className="animate-spin" />}
             {submitting ? "Booking..." : "Confirm Booking"}
           </button>
         </form>

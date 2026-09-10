@@ -3,39 +3,68 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LogIn, Mail, Lock, Sparkles } from "lucide-react";
+import { LogIn, Mail, Sparkles } from "lucide-react";
 import { creatorSignIn, getLoggedInCreator } from "@/lib/creator-auth";
 import { setAppRole } from "@/lib/client-auth";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { authInputClass, authLabelClass } from "@/components/auth/AuthSection";
+import { PasswordInput } from "@/components/auth/PasswordInput";
+import { MaintenanceNotice } from "@/components/MaintenanceNotice";
+import { AppSettings, defaultAppSettings } from "@/lib/app-settings";
+import { fetchAppSettings } from "@/lib/app-settings-client";
+
+function safeNextPath(raw: string | null): string {
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return "/dashboard";
+  return raw;
+}
 
 export default function SignInPage() {
   const router = useRouter();
+  const [nextPath, setNextPath] = useState("/dashboard");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [settings, setSettings] = useState<AppSettings>(defaultAppSettings);
 
   useEffect(() => {
-    void getLoggedInCreator().then((c) => {
-      if (c) router.replace("/dashboard");
+    setNextPath(
+      safeNextPath(new URLSearchParams(window.location.search).get("next"))
+    );
+    fetchAppSettings().then(setSettings);
+  }, []);
+
+  useEffect(() => {
+    getLoggedInCreator().then((creator) => {
+      if (creator) router.replace(nextPath);
     });
-  }, [router]);
+  }, [router, nextPath]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    const creator = await creatorSignIn(email.trim(), password);
-    if (creator) {
-      setAppRole("creator");
-      router.push("/dashboard");
-    } else {
+    try {
+      const creator = await creatorSignIn(email.trim(), password);
+      if (creator) {
+        setAppRole("creator");
+        router.push(nextPath);
+        return;
+      }
       setError("Invalid email or password. Please try again.");
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Invalid email or password. Please try again."
+      );
+    } finally {
       setLoading(false);
     }
   };
+
+  const blocked = settings.maintenanceMode;
 
   return (
     <AuthLayout
@@ -48,7 +77,7 @@ export default function SignInPage() {
           <Sparkles size={14} />
           Creator Sign In
         </div>
-        <h1 className="text-3xl font-bold text-olive-900 tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-bold text-olive-900 tracking-tight">
           Welcome back
         </h1>
         <p className="mt-2 text-olive-600">
@@ -65,9 +94,11 @@ export default function SignInPage() {
         </p>
       </div>
 
+      <MaintenanceNotice settings={settings} />
+
       <form
         onSubmit={handleSubmit}
-        className="space-y-5 rounded-2xl border border-olive-200/70 bg-milky-50 p-6 sm:p-8 shadow-sm"
+        className="space-y-5 rounded-2xl border border-olive-200/70 bg-milky-50 p-5 sm:p-8 shadow-sm"
       >
         <div>
           <label htmlFor="email" className={authLabelClass}>
@@ -87,6 +118,7 @@ export default function SignInPage() {
               placeholder="you@example.com"
               autoComplete="email"
               required
+              disabled={blocked}
             />
           </div>
         </div>
@@ -95,22 +127,16 @@ export default function SignInPage() {
           <label htmlFor="password" className={authLabelClass}>
             Password
           </label>
-          <div className="relative">
-            <Lock
-              size={16}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-olive-400"
-            />
-            <input
-              id="password"
-              type="password"
-              className={`${authInputClass} pl-10`}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              autoComplete="current-password"
-              required
-            />
-          </div>
+          <PasswordInput
+            id="password"
+            showLockIcon
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            autoComplete="current-password"
+            required
+            disabled={blocked}
+          />
         </div>
 
         {error && (
@@ -121,7 +147,7 @@ export default function SignInPage() {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || blocked}
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-olive-600 py-3.5 font-semibold text-milky-50 shadow-sm hover:bg-olive-700 hover:shadow-md transition-all disabled:opacity-60"
         >
           <LogIn size={18} />

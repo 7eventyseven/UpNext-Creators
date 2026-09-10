@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Users, Calendar, Crown, Tags, TrendingUp, Clock } from "lucide-react";
-import { fetchCreators, formatPrice } from "@/data/creators";
-import { fetchBookings } from "@/lib/storage";
-import { fetchCategories } from "@/lib/categories";
+import { Users, Calendar, Crown, Tags, TrendingUp, Clock, PanelTop, Settings } from "lucide-react";
+import { formatPrice } from "@/data/creators";
+import { apiGet } from "@/lib/api-client";
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -18,25 +17,18 @@ export default function AdminDashboard() {
   });
 
   useEffect(() => {
-    void (async () => {
-      const creators = await fetchCreators(false);
-      const bookings = await fetchBookings();
-      const cats = await fetchCategories();
-      const subscribed = creators.filter((c) => c.isSubscribed).length;
-      const pending = bookings.filter((b) => b.status === "pending").length;
-      const revenue = bookings
-        .filter((b) => b.status !== "cancelled")
-        .reduce((sum, b) => sum + b.price, 0);
-
-      setStats({
-        creators: creators.length,
-        subscribed,
-        bookings: bookings.length,
-        pending,
-        categories: cats.length,
-        revenue,
-      });
-    })();
+    apiGet<{
+      stats: {
+        creators: number;
+        subscribed: number;
+        bookings: number;
+        pending: number;
+        categories: number;
+        revenue: number;
+      };
+    }>("/api/admin/stats")
+      .then((data) => setStats(data.stats))
+      .catch(() => undefined);
   }, []);
 
   const cards = [
@@ -86,7 +78,7 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="p-6 sm:p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-olive-900">Dashboard</h1>
         <p className="text-olive-600">Overview of platform operations</p>
@@ -120,8 +112,22 @@ export default function AdminDashboard() {
         <h2 className="font-semibold text-olive-900 mb-4">Quick Actions</h2>
         <div className="flex flex-wrap gap-3">
           <Link
+            href="/admin/landing"
+            className="inline-flex items-center gap-2 rounded-xl bg-olive-600 px-4 py-2.5 text-sm font-semibold text-milky-50 hover:bg-olive-700"
+          >
+            <PanelTop size={16} />
+            Edit Landing Page
+          </Link>
+          <Link
+            href="/admin/settings"
+            className="inline-flex items-center gap-2 rounded-xl border border-olive-200 px-4 py-2.5 text-sm font-semibold text-olive-700 hover:bg-olive-50"
+          >
+            <Settings size={16} />
+            Settings
+          </Link>
+          <Link
             href="/admin/creators?new=1"
-            className="rounded-xl bg-olive-600 px-4 py-2.5 text-sm font-semibold text-milky-50 hover:bg-olive-700"
+            className="rounded-xl border border-olive-200 px-4 py-2.5 text-sm font-semibold text-olive-700 hover:bg-olive-50"
           >
             Add Creator
           </Link>

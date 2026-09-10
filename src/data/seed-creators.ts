@@ -6,7 +6,7 @@ export const seedCreators: Creator[] = [
     name: "Amina Ibrahim",
     username: "aminacreates",
     avatar: "https://api.dicebear.com/9.x/avataaars/svg?seed=Amina",
-    coverImage: "https://images.unsplash.com/photo-1611162617474-5b21e939e113?w=800&q=80",
+    coverImage: "https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=800&q=80",
     category: "Photography",
     city: "Plateau",
     location: "Jos, Plateau State",

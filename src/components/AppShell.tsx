@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { Header } from "./Header";
+import { PwaInstallPrompt } from "./PwaInstallPrompt";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -15,6 +16,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <>
       <Header />
       <main className="min-h-[calc(100vh-4rem)]">{children}</main>
+      <PwaInstallPrompt />
     </>
   );
 }

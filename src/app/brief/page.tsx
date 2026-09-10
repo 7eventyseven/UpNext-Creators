@@ -12,7 +12,7 @@ import {
   occasionByCategory,
 } from "@/lib/briefs";
 import { getClient, saveClient, setAppRole } from "@/lib/client-auth";
-import { fetchCreators } from "@/data/creators";
+import { getSortedCreators } from "@/data/creators";
 
 const steps = ["Need", "Details", "Contact"] as const;
 
@@ -62,7 +62,7 @@ export default function BriefPage() {
       const client = saveClient({ name, phone });
       let creators;
       try {
-        creators = await fetchCreators(true);
+        creators = await getSortedCreators();
       } catch {
         creators = undefined;
       }

@@ -24,18 +24,29 @@ import {
 } from "@/components/ServiceList";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { AuthSection, authInputClass, authLabelClass } from "@/components/auth/AuthSection";
+import { PasswordInput } from "@/components/auth/PasswordInput";
+import { MaintenanceNotice } from "@/components/MaintenanceNotice";
+import { AppSettings, defaultAppSettings } from "@/lib/app-settings";
+import { fetchAppSettings } from "@/lib/app-settings-client";
+
+function safeNextPath(raw: string | null): string {
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return "/dashboard";
+  return raw;
+}
 
 export default function RegisterPage() {
   const router = useRouter();
-  const categories = getCategories();
+  const [nextPath, setNextPath] = useState("/dashboard");
+  const [categories, setCategories] = useState<string[]>([]);
   const categoryOptions = categories.map((c) => ({ value: c, label: c }));
+  const [settings, setSettings] = useState<AppSettings>(defaultAppSettings);
 
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [category, setCategory] = useState(categories[0] ?? "");
+  const [category, setCategory] = useState("");
   const [state, setState] = useState<string>(nigeriaStates[0]);
   const [bio, setBio] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -46,15 +57,30 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    void getLoggedInCreator().then((c) => {
-      if (c) router.replace("/dashboard");
+    setNextPath(
+      safeNextPath(new URLSearchParams(window.location.search).get("next"))
+    );
+    fetchAppSettings().then(setSettings);
+    getCategories().then((cats) => {
+      setCategories(cats);
+      setCategory((prev) => prev || cats[0] || "");
     });
-  }, [router]);
+  }, []);
+
+  useEffect(() => {
+    getLoggedInCreator().then((creator) => {
+      if (creator) router.replace(nextPath);
+    });
+  }, [router, nextPath]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
+    if (settings.maintenanceMode) {
+      setError(settings.maintenanceMessage);
+      return;
+    }
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
       return;
@@ -107,7 +133,7 @@ export default function RegisterPage() {
           })),
       });
       setAppRole("creator");
-      router.push("/dashboard");
+      router.push(nextPath);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed.");
       setLoading(false);
@@ -142,6 +168,8 @@ export default function RegisterPage() {
         </p>
       </div>
 
+      <MaintenanceNotice settings={settings} />
+
       <form onSubmit={handleSubmit} className="space-y-5">
         <AuthSection
           title="Account"
@@ -167,10 +195,8 @@ export default function RegisterPage() {
               <label htmlFor="password" className={authLabelClass}>
                 Password *
               </label>
-              <input
+              <PasswordInput
                 id="password"
-                type="password"
-                className={authInputClass}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Min. 6 characters"
@@ -182,10 +208,8 @@ export default function RegisterPage() {
               <label htmlFor="confirm-password" className={authLabelClass}>
                 Confirm password *
               </label>
-              <input
+              <PasswordInput
                 id="confirm-password"
-                type="password"
-                className={authInputClass}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Repeat password"
@@ -306,7 +330,7 @@ export default function RegisterPage() {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || settings.maintenanceMode}
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-olive-600 py-3.5 font-semibold text-milky-50 shadow-sm hover:bg-olive-700 hover:shadow-md transition-all disabled:opacity-60"
         >
           <UserPlus size={18} />

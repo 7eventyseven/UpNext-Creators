@@ -1,5 +1,4 @@
 import type { Brief, BriefInvite, Creator } from "@/types";
-import { getSortedCreators } from "@/lib/creator-store";
 
 const BRIEFS_KEY = "upnext_briefs";
 
@@ -80,7 +79,7 @@ export function matchCreatorsForBrief(
   creators?: Creator[],
   limit = 5
 ): BriefInvite[] {
-  const pool = creators ?? getSortedCreators();
+  const pool = creators ?? [];
   return pool
     .map((c) => ({ creator: c, score: scoreCreator(c, category, state) }))
     .filter((x) => x.score >= 50 || x.creator.category === category)

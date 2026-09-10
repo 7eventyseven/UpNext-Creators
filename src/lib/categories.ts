@@ -1,3 +1,5 @@
+import { apiGet, apiSend } from "@/lib/api-client";
+
 export const defaultCategories = [
   "Photography",
   "Music Production",
@@ -9,44 +11,29 @@ export const defaultCategories = [
   "Writing & Copy",
 ];
 
-export function getCategories(): string[] {
-  return defaultCategories;
-}
-
-export async function fetchCategories(): Promise<string[]> {
-  const res = await fetch("/api/categories", { cache: "no-store" });
-  if (!res.ok) return defaultCategories;
-  return res.json();
-}
-
-export async function saveCategories(categories: string[]) {
-  const res = await fetch("/api/categories", {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ categories }),
-  });
-  if (!res.ok) throw new Error("Failed to save categories");
-  return res.json() as Promise<string[]>;
+export async function getCategories(): Promise<string[]> {
+  try {
+    const data = await apiGet<{ categories: string[] }>("/api/categories");
+    return data.categories;
+  } catch {
+    return defaultCategories;
+  }
 }
 
 export async function addCategory(name: string) {
   const trimmed = name.trim();
   if (!trimmed) return;
-  const res = await fetch("/api/categories", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name: trimmed }),
-  });
-  if (!res.ok) throw new Error("Failed to add category");
+  await apiSend("/api/categories", "POST", { name: trimmed });
 }
 
 export async function removeCategory(name: string) {
-  const res = await fetch(`/api/categories?name=${encodeURIComponent(name)}`, {
-    method: "DELETE",
-  });
-  if (!res.ok) throw new Error("Failed to remove category");
+  await apiSend(`/api/categories?name=${encodeURIComponent(name)}`, "DELETE");
 }
 
 export async function resetCategories() {
-  return saveCategories(defaultCategories);
+  await apiSend("/api/categories", "POST", { action: "reset" });
+}
+
+export async function saveCategories(_categories: string[]) {
+  // Categories are managed individually via add/remove on the API
 }

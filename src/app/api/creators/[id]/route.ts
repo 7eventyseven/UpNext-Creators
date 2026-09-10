@@ -1,88 +1,112 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { mapCreator, creatorInclude } from "@/lib/mappers";
-import type { Creator } from "@/types";
+import {
+  hashPassword,
+  jsonError,
+  requireAdmin,
+  requireCreator,
+} from "@/lib/auth-server";
+import {
+  deleteCreator,
+  findCreatorById,
+  findCreatorRowById,
+  updateCreator,
+  updateCreatorProfile,
+} from "@/lib/repository";
+import { creatorBodySchema } from "@/lib/validators";
+import { NextRequest } from "next/server";
+import { z } from "zod";
 
 type Params = { params: Promise<{ id: string }> };
 
-export async function GET(_request: Request, { params }: Params) {
+export async function GET(_req: NextRequest, { params }: Params) {
   const { id } = await params;
-  const creator = await prisma.creator.findUnique({
-    where: { id },
-    include: creatorInclude,
-  });
-
-  if (!creator) {
-    return NextResponse.json({ error: "Creator not found" }, { status: 404 });
-  }
-
-  return NextResponse.json(mapCreator(creator));
+  const creator = await findCreatorById(id);
+  if (!creator) return jsonError("Creator not found", 404);
+  return Response.json({ creator });
 }
 
-export async function PUT(request: Request, { params }: Params) {
+export async function PUT(req: NextRequest, { params }: Params) {
   const { id } = await params;
-  const body = (await request.json()) as Creator;
+  const admin = await requireAdmin(req);
+  const creatorSession = await requireCreator(req);
 
-  const existing = await prisma.creator.findUnique({ where: { id } });
-  if (!existing) {
-    return NextResponse.json({ error: "Creator not found" }, { status: 404 });
+  if (!admin && !(creatorSession && creatorSession.creatorId === id)) {
+    return jsonError("Unauthorized", 401);
   }
 
-  await prisma.service.deleteMany({ where: { creatorId: id } });
-  await prisma.creatorVideo.deleteMany({ where: { creatorId: id } });
+  const existing = await findCreatorRowById(id);
+  if (!existing) return jsonError("Creator not found", 404);
 
-  const updated = await prisma.creator.update({
-    where: { id },
-    data: {
-      name: body.name,
-      username: body.username,
-      email: body.email ?? null,
-      avatar: body.avatar,
-      coverImage: body.coverImage,
-      category: body.category,
-      city: body.city,
-      location: body.location,
-      bio: body.bio,
-      rating: body.rating,
-      reviewCount: body.reviewCount,
-      completedBookings: body.completedBookings,
-      rank: body.rank,
-      isSubscribed: body.isSubscribed,
-      subscriptionTier: body.subscriptionTier,
-      whatsapp: body.whatsapp,
-      tags: JSON.stringify(body.tags ?? []),
-      services: {
-        create: (body.services ?? []).map((s) => ({
-          id: s.id,
-          name: s.name,
-          description: s.description,
-          price: s.price,
-          discountPrice: s.discountPrice ?? null,
-          duration: s.duration,
-        })),
-      },
-      videos: {
-        create: (body.videos ?? []).map((v) => ({
-          id: v.id,
-          title: v.title,
-          url: v.url,
-          earnings: v.earnings,
-        })),
-      },
-    },
-    include: creatorInclude,
+  const body = await req.json().catch(() => null);
+
+  if (!admin && creatorSession) {
+    const profileSchema = z.object({
+      name: z.string().min(1).optional(),
+      bio: z.string().optional(),
+      city: z.string().optional(),
+      location: z.string().optional(),
+      whatsapp: z.string().optional(),
+      avatar: z.string().optional(),
+      category: z.string().optional(),
+      services: creatorBodySchema.shape.services.optional(),
+      videos: creatorBodySchema.shape.videos.optional(),
+    });
+    const parsed = profileSchema.safeParse(body);
+    if (!parsed.success) {
+      return jsonError(parsed.error.issues[0]?.message ?? "Invalid input");
+    }
+
+    const input = parsed.data;
+    const creator = await updateCreatorProfile(id, {
+      name: input.name,
+      bio: input.bio,
+      city: input.city,
+      location: input.location ?? (input.city ? `${input.city}, Nigeria` : undefined),
+      whatsapp: input.whatsapp?.replace(/\D/g, ""),
+      avatar: input.avatar,
+      category: input.category,
+      services: input.services,
+      videos: input.videos,
+    });
+    return Response.json({ creator });
+  }
+
+  const parsed = creatorBodySchema.safeParse(body);
+  if (!parsed.success) {
+    return jsonError(parsed.error.issues[0]?.message ?? "Invalid input");
+  }
+  const input = parsed.data;
+
+  const creator = await updateCreator(id, {
+    name: input.name,
+    username: input.username.replace(/^@/, ""),
+    email: input.email?.toLowerCase() || null,
+    passwordHash: input.password ? await hashPassword(input.password) : null,
+    avatar: input.avatar,
+    coverImage: input.coverImage,
+    category: input.category,
+    city: input.city,
+    location: input.location || `${input.city}, Nigeria`,
+    bio: input.bio,
+    rating: input.rating,
+    reviewCount: input.reviewCount,
+    completedBookings: input.completedBookings,
+    rank: input.rank,
+    isSubscribed: input.isSubscribed,
+    subscriptionTier: input.subscriptionTier,
+    whatsapp: input.whatsapp.replace(/\D/g, ""),
+    tags: input.tags,
+    services: input.services,
+    videos: input.videos,
   });
 
-  return NextResponse.json(mapCreator(updated));
+  return Response.json({ creator });
 }
 
-export async function DELETE(_request: Request, { params }: Params) {
-  const { id } = await params;
+export async function DELETE(req: NextRequest, { params }: Params) {
+  const admin = await requireAdmin(req);
+  if (!admin) return jsonError("Unauthorized", 401);
 
-  try {
-    await prisma.creator.delete({ where: { id } });
-    return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json({ error: "Creator not found" }, { status: 404 });
-  }
+  const { id } = await params;
+  await deleteCreator(id);
+  return Response.json({ ok: true });
 }

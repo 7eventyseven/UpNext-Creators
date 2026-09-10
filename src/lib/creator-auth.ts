@@ -1,57 +1,32 @@
-import { Creator, CreatorAccount, CreatorVideo, Service } from "@/types";
-import { fetchCreatorById, fetchCreators } from "@/lib/creator-store";
-
-const SESSION_KEY = "upnext_creator_session";
-
-function safeGet(key: string): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(key);
-}
-
-function safeSet(key: string, value: string) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(key, value);
-}
-
-function safeRemove(key: string) {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem(key);
-}
-
-export function getCreatorSession(): string | null {
-  return safeGet(SESSION_KEY);
-}
+import { Creator, CreatorVideo, Service } from "@/types";
+import { apiGet, apiSend } from "@/lib/api-client";
 
 export async function getLoggedInCreator(): Promise<Creator | undefined> {
-  const creatorId = getCreatorSession();
-  if (!creatorId) return undefined;
-  const creator = await fetchCreatorById(creatorId);
-  return creator ?? undefined;
-}
-
-export function getLoggedInCreatorSync(): Creator | undefined {
-  // Prefer async getLoggedInCreator; sync helper returns undefined on server
-  return undefined;
+  try {
+    const data = await apiGet<{ creator: Creator | null }>("/api/auth/creator");
+    return data.creator ?? undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export async function creatorSignIn(
   email: string,
   password: string
 ): Promise<Creator | null> {
-  const res = await fetch("/api/auth/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
+  const data = await apiSend<{ creator: Creator }>("/api/auth/creator", "POST", {
+    email,
+    password,
   });
-
-  if (!res.ok) return null;
-  const creator = (await res.json()) as Creator;
-  safeSet(SESSION_KEY, creator.id);
-  return creator;
+  return data.creator;
 }
 
-export function creatorSignOut() {
-  safeRemove(SESSION_KEY);
+export async function creatorSignOut() {
+  try {
+    await apiSend("/api/auth/creator", "DELETE");
+  } catch {
+    // ignore
+  }
 }
 
 export interface RegisterCreatorInput {
@@ -71,20 +46,11 @@ export interface RegisterCreatorInput {
 export async function registerCreator(
   input: RegisterCreatorInput
 ): Promise<Creator> {
-  const res = await fetch("/api/auth/register", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
+  const data = await apiSend<{ creator: Creator }>("/api/auth/creator", "POST", {
+    action: "register",
+    ...input,
   });
-
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.error || "Registration failed.");
-  }
-
-  const creator = data as Creator;
-  safeSet(SESSION_KEY, creator.id);
-  return creator;
+  return data.creator;
 }
 
 export async function updateCreatorProfile(
@@ -104,25 +70,10 @@ export async function updateCreatorProfile(
     >
   >
 ) {
-  const creator = await fetchCreatorById(creatorId);
-  if (!creator) throw new Error("Creator not found.");
-
-  const res = await fetch(`/api/creators/${creatorId}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...creator, ...updates }),
-  });
-
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.error || "Failed to update profile");
-  }
-
-  return res.json() as Promise<Creator>;
-}
-
-export type { CreatorAccount };
-
-export async function listCreatorsForAdmin(): Promise<Creator[]> {
-  return fetchCreators(false);
+  const data = await apiSend<{ creator: Creator }>(
+    `/api/creators/${creatorId}`,
+    "PUT",
+    updates
+  );
+  return data.creator;
 }

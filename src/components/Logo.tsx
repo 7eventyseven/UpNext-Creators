@@ -2,6 +2,8 @@ interface LogoProps {
   size?: "sm" | "md" | "lg";
   variant?: "full" | "mark" | "wordmark";
   className?: string;
+  primary?: string;
+  secondary?: string;
 }
 
 const sizes = {
@@ -10,7 +12,13 @@ const sizes = {
   lg: { title: "text-xl", sub: "text-[10px] mt-1", bar: "border-l-[3px] pl-3" },
 };
 
-export function Logo({ size = "md", variant = "full", className = "" }: LogoProps) {
+export function Logo({
+  size = "md",
+  variant = "full",
+  className = "",
+  primary = "UpNext",
+  secondary = "Creators",
+}: LogoProps) {
   const s = sizes[size];
 
   if (variant === "mark") {
@@ -36,12 +44,12 @@ export function Logo({ size = "md", variant = "full", className = "" }: LogoProp
         <span
           className={`${s.title} font-bold tracking-[-0.04em] text-olive-900 leading-none`}
         >
-          UpNext
+          {primary}
         </span>
         <span
           className={`${s.sub} font-medium tracking-[0.18em] text-olive-500 uppercase leading-none`}
         >
-          Creators
+          {secondary}
         </span>
       </div>
     );
@@ -53,12 +61,12 @@ export function Logo({ size = "md", variant = "full", className = "" }: LogoProp
         <span
           className={`${s.title} font-bold tracking-[-0.04em] text-olive-900 leading-none`}
         >
-          UpNext
+          {primary}
         </span>
         <span
           className={`${s.sub} font-medium tracking-[0.18em] text-olive-500 uppercase leading-none`}
         >
-          Creators
+          {secondary}
         </span>
       </div>
     </div>
