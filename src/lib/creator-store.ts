@@ -1,26 +1,5 @@
-import { Creator } from "@/types";
+import type { Creator } from "@/types";
 import { seedCreators } from "@/data/seed-creators";
-
-const CREATORS_KEY = "upnext_creators";
-
-function safeParse<T>(key: string, fallback: T): T {
-  if (typeof window === "undefined") return fallback;
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function safeSet(key: string, value: unknown) {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // Storage full or unavailable — ignore so the app keeps running
-  }
-}
 
 function sortCreators(list: Creator[]): Creator[] {
   return [...list].sort((a, b) => {
@@ -33,54 +12,63 @@ function sortCreators(list: Creator[]): Creator[] {
   });
 }
 
+/** Sync helpers keep SSR / first paint working; clients should prefer async API. */
 export function getAllCreators(): Creator[] {
-  if (typeof window === "undefined") return seedCreators;
-  try {
-    const stored = localStorage.getItem(CREATORS_KEY);
-    if (!stored) {
-      safeSet(CREATORS_KEY, seedCreators);
-      return seedCreators;
-    }
-    const parsed = safeParse<Creator[]>(CREATORS_KEY, seedCreators);
-    if (!Array.isArray(parsed)) {
-      safeSet(CREATORS_KEY, seedCreators);
-      return seedCreators;
-    }
-    return parsed;
-  } catch {
-    safeSet(CREATORS_KEY, seedCreators);
-    return seedCreators;
-  }
+  return seedCreators;
 }
 
 export function getCreatorById(id: string): Creator | undefined {
-  return getAllCreators().find((c) => c.id === id);
+  return seedCreators.find((c) => c.id === id);
 }
 
 export function getSortedCreators(): Creator[] {
-  return sortCreators(getAllCreators());
+  return sortCreators(seedCreators);
 }
 
 export function getCities(): string[] {
-  return [...new Set(getAllCreators().map((c) => c.city))].sort();
+  return [...new Set(seedCreators.map((c) => c.city))].sort();
 }
 
-export function saveCreator(creator: Creator) {
-  const creators = getAllCreators();
-  const idx = creators.findIndex((c) => c.id === creator.id);
-  if (idx >= 0) {
-    creators[idx] = creator;
-  } else {
-    creators.push(creator);
+export async function fetchCreators(sorted = false): Promise<Creator[]> {
+  const res = await fetch(`/api/creators${sorted ? "?sorted=1" : ""}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("Failed to load creators");
+  return res.json();
+}
+
+export async function fetchCreatorById(id: string): Promise<Creator | null> {
+  const res = await fetch(`/api/creators/${id}`, { cache: "no-store" });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error("Failed to load creator");
+  return res.json();
+}
+
+export async function saveCreator(creator: Creator): Promise<Creator> {
+  const exists = await fetch(`/api/creators/${creator.id}`, { cache: "no-store" });
+  const method = exists.ok ? "PUT" : "POST";
+  const url = exists.ok ? `/api/creators/${creator.id}` : "/api/creators";
+
+  const res = await fetch(url, {
+    method,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(creator),
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || "Failed to save creator");
   }
-  safeSet(CREATORS_KEY, creators);
+
+  return res.json();
 }
 
-export function deleteCreator(id: string) {
-  const creators = getAllCreators().filter((c) => c.id !== id);
-  safeSet(CREATORS_KEY, creators);
+export async function deleteCreator(id: string): Promise<void> {
+  const res = await fetch(`/api/creators/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error("Failed to delete creator");
 }
 
-export function resetCreators() {
-  safeSet(CREATORS_KEY, seedCreators);
+export async function resetCreators(): Promise<void> {
+  // Admin can re-seed via `npm run db:seed`
+  throw new Error("Use npm run db:seed to reset creators in the database.");
 }

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LogIn, Mail, Lock, Sparkles } from "lucide-react";
 import { creatorSignIn, getLoggedInCreator } from "@/lib/creator-auth";
+import { setAppRole } from "@/lib/client-auth";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { authInputClass, authLabelClass } from "@/components/auth/AuthSection";
 
@@ -16,18 +17,19 @@ export default function SignInPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (getLoggedInCreator()) {
-      router.replace("/dashboard");
-    }
+    void getLoggedInCreator().then((c) => {
+      if (c) router.replace("/dashboard");
+    });
   }, [router]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    const creator = creatorSignIn(email.trim(), password);
+    const creator = await creatorSignIn(email.trim(), password);
     if (creator) {
+      setAppRole("creator");
       router.push("/dashboard");
     } else {
       setError("Invalid email or password. Please try again.");

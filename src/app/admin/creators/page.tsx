@@ -6,7 +6,7 @@ import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2, Crown, Star } from "lucide-react";
 import {
-  getAllCreators,
+  fetchCreators,
   deleteCreator,
   formatPrice,
 } from "@/data/creators";
@@ -17,7 +17,9 @@ function CreatorsContent() {
   const router = useRouter();
   const [creators, setCreators] = useState<Creator[]>([]);
 
-  const load = () => setCreators(getAllCreators());
+  const load = () => {
+    void fetchCreators(false).then(setCreators);
+  };
 
   useEffect(() => {
     load();
@@ -26,9 +28,9 @@ function CreatorsContent() {
     }
   }, [searchParams, router]);
 
-  const handleDelete = (id: string, name: string) => {
+  const handleDelete = async (id: string, name: string) => {
     if (confirm(`Delete ${name}? This cannot be undone.`)) {
-      deleteCreator(id);
+      await deleteCreator(id);
       load();
     }
   };

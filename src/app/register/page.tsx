@@ -9,6 +9,7 @@ import { StateDropdown } from "@/components/StateDropdown";
 import { SelectDropdown } from "@/components/SelectDropdown";
 import { nigeriaStates } from "@/lib/nigeria-states";
 import { registerCreator, getLoggedInCreator } from "@/lib/creator-auth";
+import { setAppRole } from "@/lib/client-auth";
 import {
   processImageUpload,
   processVideoUpload,
@@ -45,12 +46,12 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (getLoggedInCreator()) {
-      router.replace("/dashboard");
-    }
+    void getLoggedInCreator().then((c) => {
+      if (c) router.replace("/dashboard");
+    });
   }, [router]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -85,7 +86,7 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      registerCreator({
+      await registerCreator({
         name: name.trim(),
         username: username.trim(),
         email: email.trim(),
@@ -105,6 +106,7 @@ export default function RegisterPage() {
             earnings: Number(v.earnings) || 0,
           })),
       });
+      setAppRole("creator");
       router.push("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed.");

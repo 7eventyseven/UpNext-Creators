@@ -8,6 +8,8 @@ export {
   saveCreator,
   deleteCreator,
   resetCreators,
+  fetchCreators,
+  fetchCreatorById,
 } from "@/lib/creator-store";
 
 export function formatPrice(amount: number): string {

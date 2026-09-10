@@ -1,65 +1,57 @@
 import { Creator, CreatorAccount, CreatorVideo, Service } from "@/types";
-import { getAllCreators, saveCreator } from "@/lib/creator-store";
+import { fetchCreatorById, fetchCreators } from "@/lib/creator-store";
 
-const ACCOUNTS_KEY = "upnext_creator_accounts";
 const SESSION_KEY = "upnext_creator_session";
 
-function safeParse<T>(key: string, fallback: T): T {
-  if (typeof window === "undefined") return fallback;
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
-  }
+function safeGet(key: string): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(key);
 }
 
-function safeSet(key: string, value: unknown) {
+function safeSet(key: string, value: string) {
   if (typeof window === "undefined") return;
-  localStorage.setItem(key, JSON.stringify(value));
+  localStorage.setItem(key, value);
 }
 
-function getAccounts(): CreatorAccount[] {
-  return safeParse<CreatorAccount[]>(ACCOUNTS_KEY, []);
-}
-
-function saveAccounts(accounts: CreatorAccount[]) {
-  safeSet(ACCOUNTS_KEY, accounts);
+function safeRemove(key: string) {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(key);
 }
 
 export function getCreatorSession(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(SESSION_KEY);
+  return safeGet(SESSION_KEY);
 }
 
-export function getLoggedInCreator(): Creator | undefined {
+export async function getLoggedInCreator(): Promise<Creator | undefined> {
   const creatorId = getCreatorSession();
   if (!creatorId) return undefined;
-  return getAllCreators().find((c) => c.id === creatorId);
+  const creator = await fetchCreatorById(creatorId);
+  return creator ?? undefined;
 }
 
-export function getLoggedInAccount(): CreatorAccount | undefined {
-  const creatorId = getCreatorSession();
-  if (!creatorId) return undefined;
-  return getAccounts().find((a) => a.creatorId === creatorId);
+export function getLoggedInCreatorSync(): Creator | undefined {
+  // Prefer async getLoggedInCreator; sync helper returns undefined on server
+  return undefined;
 }
 
-export function creatorSignIn(email: string, password: string): Creator | null {
-  const account = getAccounts().find(
-    (a) => a.email.toLowerCase() === email.toLowerCase() && a.password === password
-  );
-  if (!account) return null;
+export async function creatorSignIn(
+  email: string,
+  password: string
+): Promise<Creator | null> {
+  const res = await fetch("/api/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
 
-  const creator = getAllCreators().find((c) => c.id === account.creatorId);
-  if (!creator) return null;
-
+  if (!res.ok) return null;
+  const creator = (await res.json()) as Creator;
   safeSet(SESSION_KEY, creator.id);
   return creator;
 }
 
 export function creatorSignOut() {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem(SESSION_KEY);
+  safeRemove(SESSION_KEY);
 }
 
 export interface RegisterCreatorInput {
@@ -76,73 +68,61 @@ export interface RegisterCreatorInput {
   services: Service[];
 }
 
-export function registerCreator(input: RegisterCreatorInput): Creator {
-  const accounts = getAccounts();
-  const creators = getAllCreators();
+export async function registerCreator(
+  input: RegisterCreatorInput
+): Promise<Creator> {
+  const res = await fetch("/api/auth/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
 
-  const emailTaken = accounts.some(
-    (a) => a.email.toLowerCase() === input.email.toLowerCase()
-  );
-  if (emailTaken) throw new Error("An account with this email already exists.");
-
-  const usernameTaken = creators.some(
-    (c) => c.username.toLowerCase() === input.username.toLowerCase()
-  );
-  if (usernameTaken) throw new Error("This username is already taken.");
-
-  const maxRank = creators.reduce((max, c) => Math.max(max, c.rank), 0);
-  const creatorId = `c-${Date.now()}`;
-
-  const creator: Creator = {
-    id: creatorId,
-    name: input.name,
-    username: input.username.replace(/^@/, ""),
-    email: input.email.toLowerCase(),
-    avatar: input.avatar,
-    coverImage:
-      "https://images.unsplash.com/photo-1611162617474-5b21e939e113?w=800&q=80",
-    category: input.category,
-    city: input.city,
-    location: `${input.city}, Nigeria`,
-    bio: input.bio,
-    rating: 0,
-    reviewCount: 0,
-    completedBookings: 0,
-    rank: maxRank + 1,
-    isSubscribed: false,
-    subscriptionTier: "free",
-    whatsapp: input.whatsapp.replace(/\D/g, ""),
-    services: input.services,
-    tags: [input.category],
-    videos: input.videos,
-  };
-
-  const account: CreatorAccount = {
-    id: `acc-${Date.now()}`,
-    email: input.email.toLowerCase(),
-    password: input.password,
-    creatorId,
-    createdAt: new Date().toISOString(),
-  };
-
-  try {
-    saveCreator(creator);
-    saveAccounts([...accounts, account]);
-    safeSet(SESSION_KEY, creatorId);
-  } catch {
-    throw new Error(
-      "Could not save your profile. Try smaller video files or fewer uploads."
-    );
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || "Registration failed.");
   }
 
+  const creator = data as Creator;
+  safeSet(SESSION_KEY, creator.id);
   return creator;
 }
 
-export function updateCreatorProfile(
+export async function updateCreatorProfile(
   creatorId: string,
-  updates: Partial<Pick<Creator, "name" | "bio" | "city" | "location" | "whatsapp" | "avatar" | "videos" | "category" | "services">>
+  updates: Partial<
+    Pick<
+      Creator,
+      | "name"
+      | "bio"
+      | "city"
+      | "location"
+      | "whatsapp"
+      | "avatar"
+      | "videos"
+      | "category"
+      | "services"
+    >
+  >
 ) {
-  const creator = getAllCreators().find((c) => c.id === creatorId);
+  const creator = await fetchCreatorById(creatorId);
   if (!creator) throw new Error("Creator not found.");
-  saveCreator({ ...creator, ...updates });
+
+  const res = await fetch(`/api/creators/${creatorId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...creator, ...updates }),
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || "Failed to update profile");
+  }
+
+  return res.json() as Promise<Creator>;
+}
+
+export type { CreatorAccount };
+
+export async function listCreatorsForAdmin(): Promise<Creator[]> {
+  return fetchCreators(false);
 }

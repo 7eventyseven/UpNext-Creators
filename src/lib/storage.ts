@@ -23,10 +23,26 @@ export function getBookings(): Booking[] {
   return safeParse<Booking[]>(BOOKINGS_KEY, []);
 }
 
+export async function fetchBookings(): Promise<Booking[]> {
+  const res = await fetch("/api/bookings", { cache: "no-store" });
+  if (!res.ok) return getBookings();
+  const data = (await res.json()) as Booking[];
+  safeSet(BOOKINGS_KEY, data);
+  return data;
+}
+
 export function saveBooking(booking: Booking) {
   const bookings = getBookings();
   bookings.unshift(booking);
   safeSet(BOOKINGS_KEY, bookings);
+
+  void fetch("/api/bookings", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(booking),
+  }).catch(() => {
+    // Keep local booking if API is unavailable
+  });
 }
 
 export function updateBookingStatus(
@@ -38,6 +54,13 @@ export function updateBookingStatus(
   if (idx < 0) return undefined;
   bookings[idx] = { ...bookings[idx], status };
   safeSet(BOOKINGS_KEY, bookings);
+
+  void fetch(`/api/bookings/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
+  }).catch(() => undefined);
+
   return bookings[idx];
 }
 
@@ -46,6 +69,8 @@ export function deleteBooking(id: string) {
     BOOKINGS_KEY,
     getBookings().filter((b) => b.id !== id)
   );
+
+  void fetch(`/api/bookings/${id}`, { method: "DELETE" }).catch(() => undefined);
 }
 
 export function deleteConversation(id: string) {

@@ -11,12 +11,13 @@ export default function AdminLoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    if (adminLogin(password)) {
+    const ok = await adminLogin(password);
+    if (ok) {
       router.replace("/admin");
     } else {
       setError("Incorrect password. Try again.");

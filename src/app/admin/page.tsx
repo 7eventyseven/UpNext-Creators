@@ -3,10 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Users, Calendar, Crown, Tags, TrendingUp, Clock } from "lucide-react";
-import { getAllCreators } from "@/data/creators";
-import { getBookings } from "@/lib/storage";
-import { getCategories } from "@/lib/categories";
-import { formatPrice } from "@/data/creators";
+import { fetchCreators, formatPrice } from "@/data/creators";
+import { fetchBookings } from "@/lib/storage";
+import { fetchCategories } from "@/lib/categories";
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -19,22 +18,25 @@ export default function AdminDashboard() {
   });
 
   useEffect(() => {
-    const creators = getAllCreators();
-    const bookings = getBookings();
-    const subscribed = creators.filter((c) => c.isSubscribed).length;
-    const pending = bookings.filter((b) => b.status === "pending").length;
-    const revenue = bookings
-      .filter((b) => b.status !== "cancelled")
-      .reduce((sum, b) => sum + b.price, 0);
+    void (async () => {
+      const creators = await fetchCreators(false);
+      const bookings = await fetchBookings();
+      const cats = await fetchCategories();
+      const subscribed = creators.filter((c) => c.isSubscribed).length;
+      const pending = bookings.filter((b) => b.status === "pending").length;
+      const revenue = bookings
+        .filter((b) => b.status !== "cancelled")
+        .reduce((sum, b) => sum + b.price, 0);
 
-    setStats({
-      creators: creators.length,
-      subscribed,
-      bookings: bookings.length,
-      pending,
-      categories: getCategories().length,
-      revenue,
-    });
+      setStats({
+        creators: creators.length,
+        subscribed,
+        bookings: bookings.length,
+        pending,
+        categories: cats.length,
+        revenue,
+      });
+    })();
   }, []);
 
   const cards = [

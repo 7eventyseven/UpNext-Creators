@@ -80,3 +80,39 @@ export interface Conversation {
   lastMessageTime: string;
   unread: number;
 }
+
+export type BriefInviteStatus = "pending" | "accepted" | "declined";
+
+export interface BriefInvite {
+  creatorId: string;
+  creatorName: string;
+  creatorAvatar: string;
+  category: string;
+  city: string;
+  rating: number;
+  status: BriefInviteStatus;
+  respondedAt?: string;
+}
+
+export interface Brief {
+  id: string;
+  clientId: string;
+  clientName: string;
+  clientPhone: string;
+  category: string;
+  occasion: string;
+  state: string;
+  date: string;
+  budget: string;
+  notes: string;
+  status: "open" | "matched" | "closed";
+  invites: BriefInvite[];
+  createdAt: string;
+}
+
+export interface ClientProfile {
+  id: string;
+  name: string;
+  phone: string;
+  createdAt: string;
+}

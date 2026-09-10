@@ -1,5 +1,3 @@
-const CATEGORIES_KEY = "upnext_categories";
-
 export const defaultCategories = [
   "Photography",
   "Music Production",
@@ -11,48 +9,44 @@ export const defaultCategories = [
   "Writing & Copy",
 ];
 
-function safeParse<T>(key: string, fallback: T): T {
-  if (typeof window === "undefined") return fallback;
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function safeSet(key: string, value: unknown) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(key, JSON.stringify(value));
-}
-
 export function getCategories(): string[] {
-  if (typeof window === "undefined") return defaultCategories;
-  const stored = localStorage.getItem(CATEGORIES_KEY);
-  if (!stored) {
-    safeSet(CATEGORIES_KEY, defaultCategories);
-    return defaultCategories;
-  }
-  return safeParse<string[]>(CATEGORIES_KEY, defaultCategories);
+  return defaultCategories;
 }
 
-export function saveCategories(categories: string[]) {
-  safeSet(CATEGORIES_KEY, categories);
+export async function fetchCategories(): Promise<string[]> {
+  const res = await fetch("/api/categories", { cache: "no-store" });
+  if (!res.ok) return defaultCategories;
+  return res.json();
 }
 
-export function addCategory(name: string) {
+export async function saveCategories(categories: string[]) {
+  const res = await fetch("/api/categories", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ categories }),
+  });
+  if (!res.ok) throw new Error("Failed to save categories");
+  return res.json() as Promise<string[]>;
+}
+
+export async function addCategory(name: string) {
   const trimmed = name.trim();
   if (!trimmed) return;
-  const categories = getCategories();
-  if (!categories.includes(trimmed)) {
-    saveCategories([...categories, trimmed].sort());
-  }
+  const res = await fetch("/api/categories", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: trimmed }),
+  });
+  if (!res.ok) throw new Error("Failed to add category");
 }
 
-export function removeCategory(name: string) {
-  saveCategories(getCategories().filter((c) => c !== name));
+export async function removeCategory(name: string) {
+  const res = await fetch(`/api/categories?name=${encodeURIComponent(name)}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to remove category");
 }
 
-export function resetCategories() {
-  safeSet(CATEGORIES_KEY, defaultCategories);
+export async function resetCategories() {
+  return saveCategories(defaultCategories);
 }

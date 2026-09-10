@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   MessageCircle,
-  Home,
   Calendar,
   Crown,
   Menu,
@@ -13,44 +12,66 @@ import {
   UserPlus,
   LayoutDashboard,
   User,
+  Inbox,
+  FileText,
+  Compass,
+  Home,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { Logo } from "@/components/Logo";
 import { creatorSignOut, getLoggedInCreator } from "@/lib/creator-auth";
+import {
+  clearAppRole,
+  clearClient,
+  getAppRole,
+  getClient,
+} from "@/lib/client-auth";
 import { Creator } from "@/types";
-
-const customerNav = [
-  { href: "/", label: "Browse", icon: Home },
-  { href: "/chat", label: "Messages", icon: MessageCircle },
-  { href: "/bookings", label: "Bookings", icon: Calendar },
-];
-
-const creatorNav = (profileId: string) => [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: `/creators/${profileId}`, label: "My Profile", icon: User },
-  { href: "/chat", label: "Messages", icon: MessageCircle },
-  { href: "/subscribe", label: "Go Pro", icon: Crown },
-];
 
 export function Header() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [creator, setCreator] = useState<Creator | null>(null);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    setCreator(getLoggedInCreator() ?? null);
+    void getLoggedInCreator().then((c) => setCreator(c ?? null));
+    setIsClient(getAppRole() === "client" && Boolean(getClient()));
   }, [pathname]);
 
-  const navItems = useMemo(
-    () => (creator ? creatorNav(creator.id) : customerNav),
-    [creator]
-  );
+  const navItems = useMemo(() => {
+    if (creator) {
+      return [
+        { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+        { href: "/dashboard/briefs", label: "Briefs", icon: Inbox },
+        { href: `/creators/${creator.id}`, label: "Profile", icon: User },
+        { href: "/subscribe", label: "Go Pro", icon: Crown },
+      ];
+    }
+    if (isClient) {
+      return [
+        { href: "/client", label: "My Briefs", icon: FileText },
+        { href: "/brief", label: "New Brief", icon: Home },
+        { href: "/explore", label: "Explore", icon: Compass },
+        { href: "/bookings", label: "Bookings", icon: Calendar },
+      ];
+    }
+    return [
+      { href: "/", label: "Home", icon: Home },
+      { href: "/explore", label: "Explore", icon: Compass },
+      { href: "/brief", label: "Start brief", icon: FileText },
+    ];
+  }, [creator, isClient]);
 
-  const homeHref = creator ? "/dashboard" : "/";
+  const homeHref = creator ? "/dashboard" : isClient ? "/client" : "/";
 
   const handleSignOut = () => {
-    creatorSignOut();
-    setCreator(null);
+    if (creator) {
+      creatorSignOut();
+      setCreator(null);
+    }
+    clearClient();
+    clearAppRole();
     window.location.href = "/";
   };
 
@@ -85,17 +106,26 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
-          {creator ? (
+          {creator || isClient ? (
             <div className="hidden sm:flex items-center gap-2">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={creator.avatar}
-                alt=""
-                className="h-8 w-8 rounded-full object-cover border border-olive-200"
-              />
-              <span className="text-sm font-medium text-olive-700 max-w-[100px] truncate">
-                {creator.name.split(" ")[0]}
-              </span>
+              {creator && (
+                <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={creator.avatar}
+                    alt=""
+                    className="h-8 w-8 rounded-full object-cover border border-olive-200"
+                  />
+                  <span className="text-sm font-medium text-olive-700 max-w-[100px] truncate">
+                    {creator.name.split(" ")[0]}
+                  </span>
+                </>
+              )}
+              {isClient && !creator && (
+                <span className="text-sm font-medium text-olive-700">
+                  {getClient()?.name.split(" ")[0]}
+                </span>
+              )}
               <button
                 type="button"
                 onClick={handleSignOut}
@@ -108,17 +138,17 @@ export function Header() {
             <div className="hidden sm:flex items-center gap-2">
               <Link
                 href="/signin"
-                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-olive-700 hover:bg-olive-100 transition-all duration-200 hover:-translate-y-0.5"
+                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-olive-700 hover:bg-olive-100"
               >
                 <LogIn size={16} />
-                Sign In
+                Creative sign in
               </Link>
               <Link
-                href="/register"
+                href="/brief"
                 className="inline-flex items-center gap-1.5 rounded-xl bg-olive-600 px-3.5 py-2 text-sm font-semibold text-milky-50 hover:bg-olive-700 btn-lift"
               >
                 <UserPlus size={16} />
-                Register
+                Need a creative
               </Link>
             </div>
           )}
@@ -157,9 +187,8 @@ export function Header() {
               </Link>
             );
           })}
-
-          <div className="border-t border-olive-200/60 pt-2 mt-2 space-y-1">
-            {creator ? (
+          <div className="border-t border-olive-200/60 pt-2 mt-2">
+            {creator || isClient ? (
               <button
                 type="button"
                 onClick={() => {
@@ -177,16 +206,14 @@ export function Header() {
                   onClick={() => setMobileOpen(false)}
                   className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-olive-700 hover:bg-olive-100"
                 >
-                  <LogIn size={18} />
-                  Sign In
+                  Creative sign in
                 </Link>
                 <Link
-                  href="/register"
+                  href="/brief"
                   onClick={() => setMobileOpen(false)}
                   className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium bg-olive-600 text-milky-50"
                 >
-                  <UserPlus size={18} />
-                  Register
+                  Need a creative
                 </Link>
               </>
             )}
