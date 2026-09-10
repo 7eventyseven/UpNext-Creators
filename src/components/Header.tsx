@@ -7,8 +7,6 @@ import {
   Crown,
   Menu,
   X,
-  LogIn,
-  UserPlus,
   LayoutDashboard,
   User,
   Inbox,
@@ -16,6 +14,7 @@ import {
   Compass,
   Home,
   LogOut,
+  Search,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { Logo } from "@/components/Logo";
@@ -32,6 +31,14 @@ import { fetchSiteContent } from "@/lib/site-content-client";
 import { AppSettings, defaultAppSettings } from "@/lib/app-settings";
 import { fetchAppSettings } from "@/lib/app-settings-client";
 
+const marketingNav = [
+  { href: "/", label: "Home" },
+  { href: "/explore", label: "Explore" },
+  { href: "/how-it-works", label: "How it works" },
+  { href: "/businesses", label: "For Businesses" },
+  { href: "/blog", label: "Blog" },
+];
+
 export function Header() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -47,7 +54,7 @@ export function Header() {
     fetchAppSettings().then(setSettings);
   }, [pathname]);
 
-  const navItems = useMemo(() => {
+  const appNavItems = useMemo(() => {
     if (creator) {
       return [
         { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -64,13 +71,10 @@ export function Header() {
         { href: "/bookings", label: "Bookings", icon: Calendar },
       ];
     }
-    return [
-      { href: "/", label: "Home", icon: Home },
-      { href: "/explore", label: "Explore", icon: Compass },
-      { href: "/brief", label: "Start brief", icon: FileText },
-    ];
+    return [];
   }, [creator, isClient]);
 
+  const isAppUser = Boolean(creator || isClient);
   const homeHref = creator ? "/dashboard" : isClient ? "/client" : "/";
 
   const handleSignOut = async () => {
@@ -83,15 +87,24 @@ export function Header() {
     window.location.href = "/";
   };
 
+  const marketingActive = (href: string) =>
+    href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
+
   return (
-    <header className="sticky top-0 z-50 border-b border-olive-200/60 bg-milky-100/90 backdrop-blur-md transition-shadow duration-300">
+    <header className="sticky top-0 z-50 bg-milky-100">
       {settings.maintenanceMode && !creator && (
         <div className="bg-amber-500 px-4 py-2 text-center text-xs sm:text-sm font-medium text-olive-950">
           Maintenance mode — creator sign in and registration are temporarily
           unavailable.
         </div>
       )}
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+      <div
+        className={`mx-auto h-[4.75rem] max-w-[1280px] items-center gap-4 px-5 sm:px-8 lg:px-10 ${
+          isAppUser
+            ? "flex justify-between"
+            : "flex justify-between lg:grid lg:grid-cols-[1fr_auto_1fr]"
+        }`}
+      >
         <Link href={homeHref} className="flex shrink-0 items-center">
           <Logo
             size="md"
@@ -101,31 +114,52 @@ export function Header() {
           />
         </Link>
 
-        <nav className="hidden md:flex items-center gap-1">
-          {navItems.map(({ href, label, icon: Icon }) => {
-            const active =
-              href === "/"
-                ? pathname === "/"
-                : pathname === href || pathname.startsWith(`${href}/`);
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-all duration-200 ${
-                  active
-                    ? "bg-olive-600 text-milky-50"
-                    : "text-olive-700 hover:bg-olive-100 hover:text-olive-800"
-                }`}
-              >
-                <Icon size={16} />
-                {label}
-              </Link>
-            );
-          })}
-        </nav>
+        {isAppUser ? (
+          <nav className="hidden md:flex items-center gap-1">
+            {appNavItems.map(({ href, label, icon: Icon }) => {
+              const active =
+                href === "/"
+                  ? pathname === "/"
+                  : pathname === href || pathname.startsWith(`${href}/`);
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-all duration-200 ${
+                    active
+                      ? "bg-olive-600 text-milky-50"
+                      : "text-olive-700 hover:bg-olive-100 hover:text-olive-800"
+                  }`}
+                >
+                  <Icon size={16} />
+                  {label}
+                </Link>
+              );
+            })}
+          </nav>
+        ) : (
+          <nav className="hidden lg:flex items-center gap-0.5">
+            {marketingNav.map(({ href, label }) => {
+              const active = marketingActive(href);
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`rounded-full px-4 py-2 text-[13.5px] font-medium transition-colors ${
+                    active
+                      ? "bg-[#2f3a1c] text-milky-50"
+                      : "text-olive-800/80 hover:text-olive-900 hover:bg-olive-50"
+                  }`}
+                >
+                  {label}
+                </Link>
+              );
+            })}
+          </nav>
+        )}
 
-        <div className="flex items-center gap-2">
-          {creator || isClient ? (
+        <div className={`flex items-center gap-2 ${isAppUser ? "" : "lg:justify-self-end"}`}>
+          {isAppUser ? (
             <>
               <div className="hidden sm:flex items-center gap-2">
                 {creator && (
@@ -162,27 +196,32 @@ export function Header() {
               Auth paused
             </span>
           ) : (
-            <div className="hidden sm:flex items-center gap-2">
+            <div className="hidden lg:flex items-center gap-2">
               <Link
-                href="/signin"
-                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-olive-700 hover:bg-olive-100"
+                href="/explore"
+                aria-label="Search creatives"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-olive-200/80 bg-white text-olive-800 hover:bg-olive-50"
               >
-                <LogIn size={16} />
-                Creative sign in
+                <Search size={16} />
               </Link>
               <Link
-                href="/brief"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-olive-600 px-3.5 py-2 text-sm font-semibold text-milky-50 hover:bg-olive-700 btn-lift"
+                href="/signin"
+                className="rounded-full border border-olive-200/80 bg-white px-5 py-2 text-[13.5px] font-medium text-olive-900 hover:bg-olive-50"
               >
-                <UserPlus size={16} />
-                Need a creative
+                Log in
+              </Link>
+              <Link
+                href="/#start"
+                className="rounded-full bg-[#2f3a1c] px-5 py-2 text-[13.5px] font-semibold text-milky-50 hover:bg-olive-800"
+              >
+                Get started
               </Link>
             </div>
           )}
 
           <button
             type="button"
-            className="md:hidden rounded-lg p-2 text-olive-700 hover:bg-olive-100"
+            className={`${isAppUser ? "md:hidden" : "lg:hidden"} rounded-lg p-2 text-olive-700 hover:bg-olive-100`}
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label="Toggle menu"
           >
@@ -192,30 +231,48 @@ export function Header() {
       </div>
 
       {mobileOpen && (
-        <nav className="md:hidden border-t border-olive-200/60 bg-milky-100 px-4 py-3 space-y-1">
-          {navItems.map(({ href, label, icon: Icon }) => {
-            const active =
-              href === "/"
-                ? pathname === "/"
-                : pathname === href || pathname.startsWith(`${href}/`);
-            return (
-              <Link
-                key={href}
-                href={href}
-                onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium ${
-                  active
-                    ? "bg-olive-600 text-milky-50"
-                    : "text-olive-700 hover:bg-olive-100"
-                }`}
-              >
-                <Icon size={18} />
-                {label}
-              </Link>
-            );
-          })}
+        <nav className={`${isAppUser ? "md:hidden" : "lg:hidden"} border-t border-olive-200/60 bg-milky-100 px-4 py-3 space-y-1`}>
+          {isAppUser
+            ? appNavItems.map(({ href, label, icon: Icon }) => {
+                const active =
+                  href === "/"
+                    ? pathname === "/"
+                    : pathname === href || pathname.startsWith(`${href}/`);
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={() => setMobileOpen(false)}
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium ${
+                      active
+                        ? "bg-olive-600 text-milky-50"
+                        : "text-olive-700 hover:bg-olive-100"
+                    }`}
+                  >
+                    <Icon size={18} />
+                    {label}
+                  </Link>
+                );
+              })
+            : marketingNav.map(({ href, label }) => {
+                const active = marketingActive(href);
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={() => setMobileOpen(false)}
+                    className={`flex items-center rounded-lg px-3 py-2.5 text-sm font-medium ${
+                      active
+                        ? "bg-[#2f3a1c] text-milky-50"
+                        : "text-olive-700 hover:bg-olive-100"
+                    }`}
+                  >
+                    {label}
+                  </Link>
+                );
+              })}
           <div className="border-t border-olive-200/60 pt-2 mt-2">
-            {creator || isClient ? (
+            {isAppUser ? (
               <button
                 type="button"
                 onClick={() => {
@@ -236,18 +293,16 @@ export function Header() {
                 <Link
                   href="/signin"
                   onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-olive-700 hover:bg-olive-100"
+                  className="flex items-center rounded-lg px-3 py-2.5 text-sm font-medium text-olive-700 hover:bg-olive-100"
                 >
-                  <LogIn size={18} />
-                  Creative sign in
+                  Log in
                 </Link>
                 <Link
-                  href="/brief"
+                  href="/#start"
                   onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium bg-olive-600 text-milky-50"
+                  className="flex items-center rounded-lg px-3 py-2.5 text-sm font-medium bg-[#2f3a1c] text-milky-50"
                 >
-                  <UserPlus size={18} />
-                  Need a creative
+                  Get started
                 </Link>
               </>
             )}

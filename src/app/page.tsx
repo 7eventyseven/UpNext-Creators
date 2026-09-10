@@ -1,12 +1,79 @@
 "use client";
 
 import { useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Sparkles, UserRound, Clapperboard } from "lucide-react";
-import { AnimatedHeadline } from "@/components/AnimatedHeadline";
+import {
+  Bolt,
+  CalendarCheck,
+  ChevronRight,
+  Search,
+  ShieldCheck,
+  UserRound,
+  Users,
+} from "lucide-react";
 import { getLoggedInCreator } from "@/lib/creator-auth";
 import { getAppRole, getClient, setAppRole } from "@/lib/client-auth";
+import { HeroGallery } from "@/components/home/HeroGallery";
+
+const features = [
+  { icon: Bolt, label: "Smart matching" },
+  { icon: Users, label: "Verified creatives" },
+  { icon: CalendarCheck, label: "Seamless booking" },
+  { icon: ShieldCheck, label: "Safe & reliable" },
+];
+
+const categories = [
+  {
+    name: "Photography",
+    blurb: "Capture your story",
+    image:
+      "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=600&q=80",
+  },
+  {
+    name: "Videography",
+    blurb: "Bring ideas to life",
+    image:
+      "https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?auto=format&fit=crop&w=600&q=80",
+  },
+  {
+    name: "Design",
+    blurb: "Make it look amazing",
+    image:
+      "https://images.unsplash.com/photo-1561070791-2526d30994b5?auto=format&fit=crop&w=600&q=80",
+  },
+  {
+    name: "Music",
+    blurb: "Turn sound into impact",
+    image:
+      "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=600&q=80",
+  },
+  {
+    name: "Content Creation",
+    blurb: "For every platform",
+    image:
+      "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&q=80",
+  },
+  {
+    name: "Styling",
+    blurb: "Look your best",
+    image:
+      "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=600&q=80",
+  },
+  {
+    name: "Event Coverage",
+    blurb: "Moments that matter",
+    image:
+      "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=600&q=80",
+  },
+];
+
+const joinAvatars = [
+  "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&q=80",
+  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&q=80",
+  "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=80&q=80",
+];
 
 export default function HomePage() {
   const router = useRouter();
@@ -36,108 +103,142 @@ export default function HomePage() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl px-4 sm:px-6 py-10 sm:py-16">
-      <section className="relative text-center mb-12 overflow-hidden">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -top-16 left-1/2 -translate-x-1/2 h-64 w-64 rounded-full bg-olive-200/40 blur-3xl animate-float-slow"
-        />
-
-        <div
-          className="relative inline-flex items-center gap-2 rounded-full bg-olive-100 px-4 py-1.5 text-sm font-medium text-olive-700 mb-5 opacity-0 animate-slide-up"
-          style={{ animationDelay: "60ms" }}
-        >
-          <Sparkles size={14} className="animate-sparkle" />
-          Matched, not hunted
-        </div>
-
-        <div className="relative">
-          <AnimatedHeadline
-            words={[
-              { text: "Tell" },
-              { text: "us" },
-              { text: "the" },
-              { text: "vision." },
-            ]}
-          />
-          <p
-            className="mt-3 text-2xl sm:text-3xl font-bold text-olive-700 opacity-0 animate-slide-up"
-            style={{ animationDelay: "480ms" }}
-          >
-            We&apos;ll find the talent.
+    <div className="mx-auto max-w-[1280px] px-5 pb-10 pt-3 sm:px-8 lg:px-10 lg:pt-4">
+      <section className="grid items-center gap-8 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:gap-6 xl:gap-10">
+        <div className="max-w-[540px]">
+          <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-olive-500">
+            Creative talent. Real opportunities.
           </p>
+          <h1 className="mt-3 font-serif text-[2.35rem] font-semibold leading-[1.05] tracking-[-0.02em] text-[#1c2414] sm:text-[2.75rem] lg:text-[3.35rem] xl:text-[3.6rem]">
+            Tell us the vision.
+            <br />
+            We&apos;ll find the talent.
+          </h1>
+          <p className="mt-4 max-w-[420px] text-[14.5px] leading-relaxed text-olive-700/85">
+            UpNext is not a feed. Share what you need — we match you with
+            the right creatives who fit. You book. Less searching. More creating.
+          </p>
+          <ul className="mt-6 space-y-2">
+            {features.map(({ icon: Icon, label }) => (
+              <li
+                key={label}
+                className="flex items-center gap-3 text-[14px] font-medium text-olive-800"
+              >
+                <Icon size={16} className="text-olive-600" strokeWidth={1.75} />
+                {label}
+              </li>
+            ))}
+          </ul>
         </div>
 
-        <p
-          className="relative mt-5 text-olive-600 max-w-xl mx-auto leading-relaxed opacity-0 animate-slide-up"
-          style={{ animationDelay: "620ms" }}
-        >
-          UpNext is not a feed. Share what you need — we alert the right creatives.
-          They accept. You book. Less scrolling. More creating.
-        </p>
+        <HeroGallery />
       </section>
 
       <section
-        className="grid gap-4 sm:grid-cols-2 opacity-0 animate-slide-up"
-        style={{ animationDelay: "750ms" }}
+        id="start"
+        className="mt-8 grid scroll-mt-28 gap-4 lg:grid-cols-2 lg:mt-10"
       >
         <button
           type="button"
           onClick={chooseClient}
-          className="group text-left rounded-2xl border border-olive-200/80 bg-milky-50 p-6 sm:p-8 shadow-sm transition-all hover:border-olive-400 hover:shadow-md hover:-translate-y-0.5"
+          className="group flex items-center gap-4 rounded-[1.75rem] border border-olive-100 bg-white px-5 py-4 text-left shadow-[0_10px_40px_rgba(47,58,28,0.06)] transition-transform hover:-translate-y-0.5 sm:px-6 sm:py-5"
         >
-          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-olive-100 text-olive-700">
-            <UserRound size={24} />
-          </div>
-          <h2 className="text-xl font-bold text-olive-900">I need a creative</h2>
-          <p className="mt-2 text-sm text-olive-600 leading-relaxed">
-            Answer a few questions. We&apos;ll match you with creatives who fit your
-            brief, budget, and location.
-          </p>
-          <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-olive-700 group-hover:gap-3 transition-all">
-            Start your brief
-            <ArrowRight size={16} />
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-olive-50 text-olive-800">
+            <Search size={20} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-serif text-[1.45rem] font-semibold text-[#1c2414]">
+              I need a creative
+            </span>
+            <span className="mt-1 block max-w-[340px] text-[13.5px] leading-relaxed text-olive-600">
+              Answer a few questions. We&apos;ll match you with creatives who
+              fit your project.
+            </span>
+          </span>
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-olive-100 text-olive-800 transition-transform group-hover:translate-x-0.5">
+            <ChevronRight size={18} />
           </span>
         </button>
 
         <button
           type="button"
           onClick={chooseCreative}
-          className="group text-left rounded-2xl border border-olive-200/80 bg-gradient-to-br from-olive-700 to-olive-900 p-6 sm:p-8 text-milky-50 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5"
+          className="group flex items-center gap-4 rounded-[1.75rem] bg-[#2f3a1c] px-5 py-4 text-left text-milky-50 shadow-[0_12px_40px_rgba(47,58,28,0.18)] transition-transform hover:-translate-y-0.5 sm:px-6 sm:py-5"
         >
-          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-milky-50/15">
-            <Clapperboard size={24} />
-          </div>
-          <h2 className="text-xl font-bold">I am a creative</h2>
-          <p className="mt-2 text-sm text-olive-100/90 leading-relaxed">
-            Get qualified briefs from clients who already know what they want.
-            Accept or decline — your call.
-          </p>
-          <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-milky-50 group-hover:gap-3 transition-all">
-            Creative sign in
-            <ArrowRight size={16} />
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/10">
+            <UserRound size={20} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-serif text-[1.45rem] font-semibold">
+              I am a creative
+            </span>
+            <span className="mt-1 block max-w-[340px] text-[13.5px] leading-relaxed text-olive-100/85">
+              Get qualified briefs from clients who already know what they want.
+            </span>
+          </span>
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/10 transition-transform group-hover:translate-x-0.5">
+            <ChevronRight size={18} />
           </span>
         </button>
       </section>
 
-      <p
-        className="mt-8 text-center text-sm text-olive-500 opacity-0 animate-slide-up"
-        style={{ animationDelay: "900ms" }}
-      >
-        Prefer to look around first?{" "}
-        <Link href="/explore" className="font-semibold text-olive-700 hover:underline">
-          Explore creatives
-        </Link>
-      </p>
+      <section className="mt-12 lg:mt-14">
+        <div className="mb-6 flex items-center gap-4">
+          <div className="h-px flex-1 bg-olive-200/80" />
+          <p className="shrink-0 text-[11px] font-medium uppercase tracking-[0.32em] text-olive-500">
+            Trusted by creatives and brands
+          </p>
+          <div className="h-px flex-1 bg-olive-200/80" />
+        </div>
 
-      <footer className="mt-16 border-t border-olive-200/60 pt-6 text-center">
+        <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 lg:grid-cols-7 lg:gap-x-5">
+          {categories.map((category) => (
+            <Link
+              key={category.name}
+              href="/explore"
+              className="group block"
+            >
+              <div className="relative aspect-[4/3] overflow-hidden rounded-2xl">
+                <Image
+                  src={category.image}
+                  alt={category.name}
+                  fill
+                  sizes="(max-width: 1024px) 45vw, 160px"
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+              </div>
+              <p className="mt-3 text-[14px] font-semibold text-[#1c2414]">
+                {category.name}
+              </p>
+              <p className="mt-0.5 text-[12.5px] text-olive-600">{category.blurb}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <div className="mt-10 flex justify-center pb-4">
         <Link
-          href="/admin"
-          className="text-xs font-medium text-olive-400 hover:text-olive-600 transition-colors"
+          href="/#start"
+          className="inline-flex items-center gap-3 rounded-full border border-olive-200/90 bg-white py-2 pl-2 pr-2 text-olive-800 shadow-[0_8px_30px_rgba(47,58,28,0.06)] transition-transform hover:-translate-y-0.5"
         >
-          Admin Panel
+          <span className="flex -space-x-2 pl-1">
+            {joinAvatars.map((src) => (
+              <span
+                key={src}
+                className="relative h-8 w-8 overflow-hidden rounded-full ring-2 ring-white"
+              >
+                <Image src={src} alt="" fill sizes="32px" className="object-cover" />
+              </span>
+            ))}
+          </span>
+          <span className="px-1 text-[13.5px] font-medium">
+            Join thousands of creatives and clients on UpNext
+          </span>
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-olive-50">
+            <ChevronRight size={16} />
+          </span>
         </Link>
-      </footer>
+      </div>
     </div>
   );
 }

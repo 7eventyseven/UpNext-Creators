@@ -1,6 +1,17 @@
 import type { Metadata, Viewport } from "next";
+import { DM_Sans, Fraunces } from "next/font/google";
 import { AppShell } from "@/components/AppShell";
 import "./globals.css";
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  variable: "--font-dm-sans",
+});
+
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-fraunces",
+});
 
 const APP_NAME = "UpNext Creators";
 const APP_DEFAULT_TITLE =
@@ -121,7 +132,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${dmSans.variable} ${fraunces.variable}`}>
       <body className="antialiased font-sans">
         <AppShell>{children}</AppShell>
       </body>

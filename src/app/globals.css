@@ -19,7 +19,8 @@
   --color-milky-400: #ddd4c4;
   --color-milky-500: #c9bfad;
 
-  --font-sans: "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-sans: var(--font-dm-sans), "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-serif: var(--font-fraunces), Georgia, "Times New Roman", serif;
 }
 
 * {
@@ -31,9 +32,7 @@ html {
 }
 
 body {
-  background: linear-gradient(160deg, var(--color-milky-100) 0%, var(--color-milky-200) 50%, var(--color-olive-50) 100%);
-  background-size: 200% 200%;
-  animation: bg-drift 20s ease infinite;
+  background: var(--color-milky-100);
   color: var(--color-olive-900);
   min-height: 100vh;
 }
