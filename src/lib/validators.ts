@@ -53,6 +53,19 @@ export const registerSchema = z.object({
   services: z.array(serviceSchema).default([]),
 });
 
+export const clientRegisterSchema = z.object({
+  name: z.string().min(1, "Please enter your name."),
+  email: z.string().email("Enter a valid email address."),
+  password: z.string().min(6, "Password must be at least 6 characters."),
+  phone: z.string().min(7, "Enter a valid WhatsApp number."),
+});
+
+export const reviewSchema = z.object({
+  bookingId: z.string().min(1),
+  rating: z.number().int().min(1, "Pick a rating from 1 to 5.").max(5),
+  comment: z.string().max(600).default(""),
+});
+
 export const bookingSchema = z.object({
   creatorId: z.string().min(1),
   creatorName: z.string().min(1),

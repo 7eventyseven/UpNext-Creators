@@ -1,22 +1,7 @@
 import type { ClientProfile } from "@/types";
+import { apiGet, apiSend } from "@/lib/api-client";
 
-const CLIENT_KEY = "upnext_client";
 const ROLE_KEY = "upnext_role";
-
-function safeParse<T>(key: string, fallback: T): T {
-  if (typeof window === "undefined") return fallback;
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function safeSet(key: string, value: unknown) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(key, JSON.stringify(value));
-}
 
 export type AppRole = "client" | "creator" | null;
 
@@ -37,24 +22,54 @@ export function clearAppRole() {
   localStorage.removeItem(ROLE_KEY);
 }
 
-export function getClient(): ClientProfile | null {
-  return safeParse<ClientProfile | null>(CLIENT_KEY, null);
+export async function getLoggedInClient(): Promise<ClientProfile | undefined> {
+  try {
+    const data = await apiGet<{ client: ClientProfile | null }>(
+      "/api/auth/client"
+    );
+    return data.client ?? undefined;
+  } catch {
+    return undefined;
+  }
 }
 
-export function saveClient(input: { name: string; phone: string }): ClientProfile {
-  const existing = getClient();
-  const client: ClientProfile = {
-    id: existing?.id ?? `client-${Date.now()}`,
-    name: input.name.trim(),
-    phone: input.phone.trim(),
-    createdAt: existing?.createdAt ?? new Date().toISOString(),
-  };
-  safeSet(CLIENT_KEY, client);
+export interface RegisterClientInput {
+  name: string;
+  email: string;
+  password: string;
+  phone: string;
+}
+
+export async function registerClient(
+  input: RegisterClientInput
+): Promise<ClientProfile> {
+  const data = await apiSend<{ client: ClientProfile }>(
+    "/api/auth/client",
+    "POST",
+    { action: "register", ...input }
+  );
   setAppRole("client");
-  return client;
+  return data.client;
 }
 
-export function clearClient() {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem(CLIENT_KEY);
+export async function clientSignIn(
+  email: string,
+  password: string
+): Promise<ClientProfile> {
+  const data = await apiSend<{ client: ClientProfile }>(
+    "/api/auth/client",
+    "POST",
+    { email, password }
+  );
+  setAppRole("client");
+  return data.client;
+}
+
+export async function clientSignOut() {
+  try {
+    await apiSend("/api/auth/client", "DELETE");
+  } catch {
+    // ignore
+  }
+  clearAppRole();
 }

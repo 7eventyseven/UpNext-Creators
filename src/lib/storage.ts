@@ -1,5 +1,17 @@
-import { Booking, ChatMessage, Conversation } from "@/types";
+import { Booking, ChatMessage, Conversation, Review } from "@/types";
 import { apiGet, apiSend } from "@/lib/api-client";
+
+export async function submitReview(input: {
+  bookingId: string;
+  rating: number;
+  comment?: string;
+}): Promise<Review> {
+  const data = await apiSend<{ review: Review }>("/api/reviews", "POST", {
+    comment: "",
+    ...input,
+  });
+  return data.review;
+}
 
 export async function getBookings(creatorId?: string): Promise<Booking[]> {
   const qs = creatorId ? `?creatorId=${encodeURIComponent(creatorId)}` : "";

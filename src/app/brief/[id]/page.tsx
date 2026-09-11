@@ -7,12 +7,13 @@ import {
   ArrowLeft,
   CheckCircle,
   Clock,
+  Crown,
   MapPin,
   Star,
   XCircle,
   Phone,
 } from "lucide-react";
-import { budgetLabel, getBriefById } from "@/lib/briefs";
+import { budgetLabel, getBriefById, inviteIsVisible } from "@/lib/briefs";
 import type { Brief } from "@/types";
 
 export default function BriefDetailPage({
@@ -43,8 +44,11 @@ export default function BriefDetailPage({
   }
 
   const accepted = brief.invites.filter((i) => i.status === "accepted");
-  const pending = brief.invites.filter((i) => i.status === "pending");
+  const pending = brief.invites.filter(
+    (i) => i.status === "pending" && inviteIsVisible(brief, i)
+  );
   const declined = brief.invites.filter((i) => i.status === "declined");
+  const priorityCount = brief.invites.filter((i) => i.priority).length;
 
   return (
     <div className="mx-auto max-w-2xl px-4 sm:px-6 py-8">
@@ -75,9 +79,22 @@ export default function BriefDetailPage({
           </p>
         )}
         <p className="mt-4 text-sm text-olive-700 bg-olive-50 rounded-xl px-4 py-3">
-          We alerted <strong>{brief.invites.length}</strong> matching creative
-          {brief.invites.length !== 1 ? "s" : ""}. They can accept or decline —
-          accepted ones appear below so you can book.
+          {priorityCount > 0 ? (
+            <>
+              Subscribed creatives were notified first
+              {priorityCount === 1
+                ? " — 1 Pro/Premium match."
+                : ` — ${priorityCount} Pro/Premium matches.`}{" "}
+              If they don&apos;t reply in time, we open the brief to more
+              creatives. Accepted ones appear below so you can book.
+            </>
+          ) : (
+            <>
+              We alerted <strong>{brief.invites.length}</strong> matching
+              creative{brief.invites.length !== 1 ? "s" : ""}. They can accept
+              or decline — accepted ones appear below so you can book.
+            </>
+          )}
         </p>
       </div>
 
@@ -164,7 +181,15 @@ export default function BriefDetailPage({
                   )}
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium text-olive-900">{invite.creatorName}</p>
+                  <p className="font-medium text-olive-900 inline-flex items-center gap-1.5">
+                    {invite.creatorName}
+                    {invite.priority && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-olive-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-olive-700">
+                        <Crown size={10} />
+                        Priority
+                      </span>
+                    )}
+                  </p>
                   <p className="text-sm text-olive-500">Brief sent · awaiting response</p>
                 </div>
               </article>

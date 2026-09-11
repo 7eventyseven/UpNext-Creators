@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 
 export const ADMIN_COOKIE = "upnext_admin_token";
 export const CREATOR_COOKIE = "upnext_creator_token";
+export const CLIENT_COOKIE = "upnext_client_token";
 
 const WEEK = 60 * 60 * 24 * 7;
 
@@ -28,7 +29,16 @@ export type CreatorTokenPayload = {
   email: string;
 };
 
-export type AuthTokenPayload = AdminTokenPayload | CreatorTokenPayload;
+export type ClientTokenPayload = {
+  role: "client";
+  clientId: string;
+  email: string;
+};
+
+export type AuthTokenPayload =
+  | AdminTokenPayload
+  | CreatorTokenPayload
+  | ClientTokenPayload;
 
 export async function hashPassword(password: string) {
   return bcrypt.hash(password, 10);
@@ -60,6 +70,13 @@ export async function verifyToken(token: string): Promise<AuthTokenPayload | nul
       return {
         role: "creator",
         creatorId: payload.creatorId,
+        email: String(payload.email ?? ""),
+      };
+    }
+    if (payload.role === "client" && typeof payload.clientId === "string") {
+      return {
+        role: "client",
+        clientId: payload.clientId,
         email: String(payload.email ?? ""),
       };
     }
@@ -111,6 +128,16 @@ export async function requireCreator(req?: NextRequest) {
   if (!token) return null;
   const payload = await verifyToken(token);
   if (!payload || payload.role !== "creator") return null;
+  return payload;
+}
+
+export async function requireClient(req?: NextRequest) {
+  const token = req
+    ? getTokenFromRequest(req, CLIENT_COOKIE)
+    : await getTokenFromCookies(CLIENT_COOKIE);
+  if (!token) return null;
+  const payload = await verifyToken(token);
+  if (!payload || payload.role !== "client") return null;
   return payload;
 }
 

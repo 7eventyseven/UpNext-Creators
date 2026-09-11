@@ -87,7 +87,7 @@ export default function AdminLoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter admin password"
-              className="w-full rounded-xl border border-olive-200 bg-milky-50 py-3 pl-10 pr-10 text-olive-900 placeholder:text-olive-400 focus:border-olive-500 focus:outline-none focus:ring-2 focus:ring-olive-200"
+              className="w-full rounded-xl border border-olive-200 bg-milky-50 py-3 pl-10 pr-11 text-olive-900 placeholder:text-olive-400 focus:border-olive-500 focus:outline-none focus:ring-2 focus:ring-olive-200"
               required
             />
           </div>

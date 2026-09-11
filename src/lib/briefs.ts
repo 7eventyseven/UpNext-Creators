@@ -50,11 +50,34 @@ export function getClientBriefs(clientId: string): Brief[] {
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
+/** Subscribed creatives get an exclusive window before free creatives see the brief. */
+export const BRIEF_PRIORITY_WINDOW_MS = 2 * 60 * 60 * 1000;
+
+function isPriorityInvite(invite: BriefInvite) {
+  return invite.priority === true;
+}
+
+export function isFreeWaveOpen(brief: Brief, now = Date.now()) {
+  const waitingOnSubscribers = brief.invites.some(
+    (invite) => isPriorityInvite(invite) && invite.status === "pending"
+  );
+  if (!waitingOnSubscribers) return true;
+  const unlockAt = brief.priorityUntil ?? brief.createdAt;
+  return now >= new Date(unlockAt).getTime();
+}
+
+export function inviteIsVisible(brief: Brief, invite: BriefInvite, now = Date.now()) {
+  if (invite.priority !== false) return true;
+  return isFreeWaveOpen(brief, now);
+}
+
 export function getCreatorInvites(creatorId: string): Array<Brief & { myInvite: BriefInvite }> {
+  const now = Date.now();
   return getBriefs()
     .map((brief) => {
       const myInvite = brief.invites.find((i) => i.creatorId === creatorId);
       if (!myInvite) return null;
+      if (!inviteIsVisible(brief, myInvite, now)) return null;
       return { ...brief, myInvite };
     })
     .filter((b): b is Brief & { myInvite: BriefInvite } => b !== null)
@@ -73,6 +96,19 @@ function scoreCreator(creator: Creator, category: string, state: string): number
   return score;
 }
 
+function toInvite(creator: Creator, priority: boolean): BriefInvite {
+  return {
+    creatorId: creator.id,
+    creatorName: creator.name,
+    creatorAvatar: creator.avatar,
+    category: creator.category,
+    city: creator.city,
+    rating: creator.rating,
+    status: "pending",
+    priority,
+  };
+}
+
 export function matchCreatorsForBrief(
   category: string,
   state: string,
@@ -80,20 +116,22 @@ export function matchCreatorsForBrief(
   limit = 5
 ): BriefInvite[] {
   const pool = creators ?? [];
-  return pool
+  const scored = pool
     .map((c) => ({ creator: c, score: scoreCreator(c, category, state) }))
     .filter((x) => x.score >= 50 || x.creator.category === category)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, limit)
-    .map(({ creator }) => ({
-      creatorId: creator.id,
-      creatorName: creator.name,
-      creatorAvatar: creator.avatar,
-      category: creator.category,
-      city: creator.city,
-      rating: creator.rating,
-      status: "pending" as const,
-    }));
+    .sort((a, b) => b.score - a.score);
+
+  const subscribed = scored.filter((x) => x.creator.isSubscribed);
+  const free = scored.filter((x) => !x.creator.isSubscribed);
+
+  const priority = subscribed.slice(0, Math.max(limit, 8)).map((x) => x.creator);
+  const remainingSlots = Math.max(0, limit);
+  const later = free.slice(0, remainingSlots).map((x) => x.creator);
+
+  return [
+    ...priority.map((creator) => toInvite(creator, true)),
+    ...later.map((creator) => toInvite(creator, false)),
+  ];
 }
 
 export interface CreateBriefInput {
@@ -115,6 +153,8 @@ export function createBrief(input: CreateBriefInput): Brief {
     input.state,
     input.creators
   );
+  const hasPriority = invites.some((invite) => invite.priority);
+  const now = new Date();
 
   const brief: Brief = {
     id: `brief-${Date.now()}`,
@@ -129,7 +169,10 @@ export function createBrief(input: CreateBriefInput): Brief {
     notes: input.notes,
     status: invites.length > 0 ? "matched" : "open",
     invites,
-    createdAt: new Date().toISOString(),
+    createdAt: now.toISOString(),
+    priorityUntil: hasPriority
+      ? new Date(now.getTime() + BRIEF_PRIORITY_WINDOW_MS).toISOString()
+      : now.toISOString(),
   };
 
   const briefs = getBriefs();

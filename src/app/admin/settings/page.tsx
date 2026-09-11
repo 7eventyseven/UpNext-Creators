@@ -88,7 +88,8 @@ export default function AdminSettingsPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-olive-900">Settings</h1>
         <p className="text-olive-600">
-          Subscription pricing and site maintenance controls
+          Subscription pricing, booking commission, and site maintenance
+          controls
         </p>
       </div>
 
@@ -152,6 +153,54 @@ export default function AdminSettingsPage() {
               Maintenance is ON — visitors cannot sign in or register.
             </p>
           )}
+        </section>
+
+        <section className="rounded-2xl border border-olive-200/70 bg-milky-50 p-4 sm:p-6 space-y-4">
+          <div>
+            <h2 className="text-lg font-semibold text-olive-900">
+              Booking commission
+            </h2>
+            <p className="text-sm text-olive-600">
+              Clients pay the full service price to UpNext through Paystack.
+              This percentage stays with the platform; the rest is the
+              creative&apos;s payout.
+            </p>
+          </div>
+          <div className="max-w-xs">
+            <label className="mb-1.5 block text-sm font-medium text-olive-700">
+              UpNext cut (%)
+            </label>
+            <input
+              type="number"
+              min={0}
+              max={50}
+              className={inputClass}
+              value={form.bookingCommissionPercent}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  bookingCommissionPercent: Math.min(
+                    50,
+                    Math.max(0, Number(e.target.value) || 0)
+                  ),
+                }))
+              }
+              required
+            />
+            <p className="mt-1.5 text-xs text-olive-500">
+              Example: ₦100,000 booking at {form.bookingCommissionPercent}% =
+              UpNext ₦
+              {Math.round(
+                (100000 * form.bookingCommissionPercent) / 100
+              ).toLocaleString()}
+              , creative ₦
+              {(
+                100000 -
+                Math.round((100000 * form.bookingCommissionPercent) / 100)
+              ).toLocaleString()}
+              .
+            </p>
+          </div>
         </section>
 
         <section className="space-y-4">

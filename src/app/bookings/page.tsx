@@ -12,11 +12,14 @@ import {
   LogIn,
   UserPlus,
   Loader2,
+  Star,
 } from "lucide-react";
-import { getBookings } from "@/lib/storage";
+import { getBookings, submitReview } from "@/lib/storage";
 import { getLoggedInCreator } from "@/lib/creator-auth";
+import { getLoggedInClient } from "@/lib/client-auth";
+import { RatingStars } from "@/components/RatingStars";
 import { formatPrice } from "@/data/creators";
-import { Booking, Creator } from "@/types";
+import { Booking, ClientProfile, Creator } from "@/types";
 
 const statusConfig = {
   pending: {
@@ -41,31 +44,224 @@ const statusConfig = {
   },
 };
 
+function StatusBadge({ status }: { status: Booking["status"] }) {
+  const config = statusConfig[status];
+  const Icon = config.icon;
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${config.color}`}
+    >
+      <Icon size={12} />
+      {config.label}
+    </span>
+  );
+}
+
+function formatDate(value: string) {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleDateString("en-NG", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+/** A client's booking, with the rating they can leave or change. */
+function ClientBookingCard({ booking }: { booking: Booking }) {
+  const [rating, setRating] = useState(booking.reviewRating ?? 0);
+  const [comment, setComment] = useState(booking.reviewComment ?? "");
+  const [editing, setEditing] = useState(!booking.reviewRating);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(Boolean(booking.reviewRating));
+  const [error, setError] = useState("");
+
+  const rateable =
+    booking.status === "confirmed" || booking.status === "completed";
+
+  const save = async (nextRating: number) => {
+    setRating(nextRating);
+    setError("");
+    setSaving(true);
+    try {
+      await submitReview({
+        bookingId: booking.id,
+        rating: nextRating,
+        comment,
+      });
+      setSaved(true);
+      setEditing(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save rating.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <article className="rounded-2xl border border-olive-200/70 bg-milky-50 p-5 shadow-sm animate-fade-in">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="font-semibold text-olive-900">{booking.serviceName}</h3>
+          <Link
+            href={`/creators/${booking.creatorId}`}
+            className="text-sm text-olive-600 hover:text-olive-800 hover:underline"
+          >
+            with {booking.creatorName}
+          </Link>
+        </div>
+        <StatusBadge status={booking.status} />
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+        <div className="flex items-center gap-2 text-olive-600">
+          <Calendar size={14} className="text-olive-400" />
+          {formatDate(booking.date)}
+        </div>
+        <div className="flex items-center gap-2 text-olive-600">
+          <Clock size={14} className="text-olive-400" />
+          {booking.time}
+        </div>
+        <div className="font-semibold text-olive-800">
+          {formatPrice(booking.price)}
+        </div>
+        {booking.paymentStatus === "paid" && (
+          <div className="text-xs font-medium text-olive-500">Paid</div>
+        )}
+      </div>
+
+      {booking.notes && (
+        <p className="mt-3 border-t border-olive-100 pt-3 text-sm text-olive-500">
+          {booking.notes}
+        </p>
+      )}
+
+      <div className="mt-4 border-t border-olive-100 pt-4">
+        {!rateable ? (
+          <p className="text-xs text-olive-500">
+            You can rate {booking.creatorName.split(" ")[0]} once this booking
+            is confirmed.
+          </p>
+        ) : !editing ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <RatingStars value={rating} size={18} />
+            <span className="text-xs text-olive-500">
+              {saved ? "Your rating" : ""}
+            </span>
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="text-xs font-semibold text-olive-700 hover:underline"
+            >
+              Change
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="text-sm font-medium text-olive-700">
+                Rate {booking.creatorName.split(" ")[0]}
+              </p>
+              <RatingStars
+                value={rating}
+                onChange={(next) => void save(next)}
+                size={20}
+                disabled={saving}
+              />
+              {saving && (
+                <Loader2 size={14} className="animate-spin text-olive-500" />
+              )}
+            </div>
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              onBlur={() => rating > 0 && void save(rating)}
+              rows={2}
+              maxLength={600}
+              placeholder="Anything you'd tell another client? (optional)"
+              className="w-full rounded-xl border border-olive-200 bg-white px-3 py-2 text-sm text-olive-900 placeholder:text-olive-400 focus:border-olive-500 focus:outline-none focus:ring-2 focus:ring-olive-200"
+            />
+          </div>
+        )}
+
+        {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
+      </div>
+    </article>
+  );
+}
+
+/** A booking for one of the signed-in creator's services. */
+function CreatorBookingCard({ booking }: { booking: Booking }) {
+  return (
+    <article className="rounded-2xl border border-olive-200/70 bg-milky-50 p-5 shadow-sm animate-fade-in">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="font-semibold text-olive-900">{booking.serviceName}</h3>
+          <p className="text-sm text-olive-600">Client: {booking.clientName}</p>
+        </div>
+        <StatusBadge status={booking.status} />
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+        <div className="flex items-center gap-2 text-olive-600">
+          <Calendar size={14} className="text-olive-400" />
+          {formatDate(booking.date)}
+        </div>
+        <div className="flex items-center gap-2 text-olive-600">
+          <Clock size={14} className="text-olive-400" />
+          {booking.time}
+        </div>
+        <div className="flex items-center gap-2 text-olive-600">
+          <User size={14} className="text-olive-400" />
+          {booking.clientPhone}
+        </div>
+        <div className="font-semibold text-olive-800">
+          {formatPrice(booking.creatorPayout ?? booking.price)}
+        </div>
+      </div>
+
+      {booking.notes && (
+        <p className="mt-3 border-t border-olive-100 pt-3 text-sm text-olive-500">
+          {booking.notes}
+        </p>
+      )}
+    </article>
+  );
+}
+
 export default function BookingsPage() {
-  const [creator, setCreator] = useState<Creator | null | undefined>(undefined);
+  const [creator, setCreator] = useState<Creator | null>(null);
+  const [client, setClient] = useState<ClientProfile | null>(null);
+  const [resolved, setResolved] = useState(false);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(false);
 
   useEffect(() => {
-    getLoggedInCreator().then((loggedIn) => {
-      setCreator(loggedIn ?? null);
-    });
+    void (async () => {
+      const [loggedInCreator, loggedInClient] = await Promise.all([
+        getLoggedInCreator(),
+        getLoggedInClient(),
+      ]);
+      setCreator(loggedInCreator ?? null);
+      setClient(loggedInClient ?? null);
+      setResolved(true);
+    })();
   }, []);
 
   useEffect(() => {
-    if (!creator) {
+    if (!resolved || (!creator && !client)) {
       setBookings([]);
       return;
     }
 
     setLoadingBookings(true);
-    getBookings(creator.id)
+    getBookings()
       .then(setBookings)
       .catch(() => setBookings([]))
       .finally(() => setLoadingBookings(false));
-  }, [creator]);
+  }, [resolved, creator, client]);
 
-  if (creator === undefined) {
+  if (!resolved) {
     return (
       <div className="mx-auto flex w-full max-w-6xl min-h-[calc(100vh-4rem)] items-center justify-center px-4 sm:px-6 py-8">
         <Loader2 className="animate-spin text-olive-500" size={28} />
@@ -73,7 +269,7 @@ export default function BookingsPage() {
     );
   }
 
-  if (!creator) {
+  if (!creator && !client) {
     return (
       <div className="mx-auto flex w-full max-w-6xl min-h-[calc(100vh-4rem)] flex-col px-4 sm:px-6 py-8">
         <div className="mb-8">
@@ -81,7 +277,7 @@ export default function BookingsPage() {
             My Bookings
           </h1>
           <p className="mt-1 text-olive-600">
-            Track your service bookings with creators across Nigeria.
+            Track your bookings with creatives across Nigeria.
           </p>
         </div>
 
@@ -94,23 +290,23 @@ export default function BookingsPage() {
               Sign in to view your bookings
             </h2>
             <p className="mx-auto mt-2 max-w-md text-sm sm:text-base text-olive-600 leading-relaxed">
-              Log in or create an account to see booking requests, track status,
-              and manage your schedule.
+              Log in to see your bookings, track their status, and rate the
+              creatives you worked with.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
-                href="/signin?next=/bookings"
+                href="/client/signin?next=/bookings"
                 className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-olive-600 px-6 py-3 text-sm font-semibold text-milky-50 hover:bg-olive-700"
               >
                 <LogIn size={16} />
-                Sign In
+                I booked a creative
               </Link>
               <Link
-                href="/register?next=/bookings"
+                href="/signin?next=/bookings"
                 className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-olive-200 bg-white px-6 py-3 text-sm font-semibold text-olive-700 hover:bg-olive-50"
               >
                 <UserPlus size={16} />
-                Sign Up
+                I am a creative
               </Link>
             </div>
           </div>
@@ -119,6 +315,8 @@ export default function BookingsPage() {
     );
   }
 
+  const isClientView = Boolean(client && !creator);
+
   return (
     <div className="mx-auto flex w-full max-w-6xl min-h-[calc(100vh-4rem)] flex-col px-4 sm:px-6 py-8">
       <div className="mb-8">
@@ -126,7 +324,9 @@ export default function BookingsPage() {
           My Bookings
         </h1>
         <p className="mt-1 text-olive-600">
-          Track booking requests for your services across Nigeria.
+          {isClientView
+            ? "Everything you've booked — and a place to rate the creatives you worked with."
+            : "Track booking requests for your services across Nigeria."}
         </p>
       </div>
 
@@ -140,74 +340,35 @@ export default function BookingsPage() {
             <Calendar size={48} className="mx-auto mb-4 text-olive-300" />
             <p className="font-medium text-olive-700">No bookings yet</p>
             <p className="mt-1 mb-5 text-sm text-olive-500">
-              When clients book your services, they&apos;ll show up here.
+              {isClientView
+                ? "Once you book a creative, it'll show up here so you can track and rate it."
+                : "When clients book your services, they'll show up here."}
             </p>
             <Link
-              href={`/creators/${creator.id}`}
+              href={isClientView ? "/brief" : `/creators/${creator?.id}`}
               className="inline-block rounded-xl bg-olive-600 px-5 py-2.5 text-sm font-semibold text-milky-50 hover:bg-olive-700"
             >
-              View your profile
+              {isClientView ? "Start a brief" : "View your profile"}
             </Link>
           </div>
         </div>
       ) : (
         <div className="grid flex-1 content-start gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {bookings.map((booking) => {
-            const status = statusConfig[booking.status];
-            const StatusIcon = status.icon;
-            return (
-              <article
-                key={booking.id}
-                className="rounded-2xl border border-olive-200/70 bg-milky-50 p-5 shadow-sm animate-fade-in"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="font-semibold text-olive-900">
-                      {booking.serviceName}
-                    </h3>
-                    <p className="text-sm text-olive-600">
-                      Client: {booking.clientName}
-                    </p>
-                  </div>
-                  <span
-                    className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${status.color}`}
-                  >
-                    <StatusIcon size={12} />
-                    {status.label}
-                  </span>
-                </div>
-
-                <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                  <div className="flex items-center gap-2 text-olive-600">
-                    <Calendar size={14} className="text-olive-400" />
-                    {new Date(booking.date).toLocaleDateString("en-NG", {
-                      weekday: "short",
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  </div>
-                  <div className="flex items-center gap-2 text-olive-600">
-                    <Clock size={14} className="text-olive-400" />
-                    {booking.time}
-                  </div>
-                  <div className="flex items-center gap-2 text-olive-600">
-                    <User size={14} className="text-olive-400" />
-                    {booking.clientPhone}
-                  </div>
-                  <div className="font-semibold text-olive-800">
-                    {formatPrice(booking.price)}
-                  </div>
-                </div>
-
-                {booking.notes && (
-                  <p className="mt-3 border-t border-olive-100 pt-3 text-sm text-olive-500">
-                    {booking.notes}
-                  </p>
-                )}
-              </article>
-            );
-          })}
+          {bookings.map((booking) =>
+            isClientView ? (
+              <ClientBookingCard key={booking.id} booking={booking} />
+            ) : (
+              <CreatorBookingCard key={booking.id} booking={booking} />
+            )
+          )}
         </div>
+      )}
+
+      {isClientView && bookings.length > 0 && (
+        <p className="mt-8 flex items-center justify-center gap-2 text-center text-sm text-olive-500">
+          <Star size={14} className="text-amber-400" />
+          Your ratings feed each creative&apos;s public score.
+        </p>
       )}
     </div>
   );

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Check,
+  Crown,
   Inbox,
   MapPin,
   X,
@@ -65,7 +66,8 @@ export default function CreativeBriefsPage() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-olive-900">Incoming briefs</h1>
         <p className="text-olive-600 mt-1">
-          Clients who match your craft. Accept to show interest — they&apos;ll book from your profile.
+          Subscribed creatives see matching briefs first. Accept to show interest
+          — they&apos;ll book from your profile.
         </p>
       </div>
 
@@ -74,7 +76,8 @@ export default function CreativeBriefsPage() {
           <Inbox size={40} className="mx-auto mb-3 text-olive-300" />
           <p className="font-medium text-olive-700">No briefs yet</p>
           <p className="text-sm text-olive-500 mt-1">
-            When a client needs your category, their brief appears here.
+            When a client needs your category, subscribed creatives are notified
+            first. Upgrade to see briefs before everyone else.
           </p>
         </div>
       ) : (
@@ -89,8 +92,14 @@ export default function CreativeBriefsPage() {
                   key={brief.id}
                   className="rounded-2xl border border-olive-200/70 bg-milky-50 p-5 shadow-sm"
                 >
-                  <h3 className="font-semibold text-olive-900">
+                  <h3 className="font-semibold text-olive-900 inline-flex items-center gap-2">
                     {brief.category} · {brief.occasion}
+                    {brief.myInvite.priority && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-olive-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-olive-700">
+                        <Crown size={10} />
+                        First look
+                      </span>
+                    )}
                   </h3>
                   <p className="mt-1 text-sm text-olive-600 flex items-center gap-1">
                     <MapPin size={14} />

@@ -1,9 +1,11 @@
 import type {
   Booking,
   ChatMessage,
+  ClientProfile,
   Conversation,
   Creator,
   CreatorVideo,
+  Review,
   Service,
 } from "@/types";
 
@@ -14,6 +16,16 @@ export interface AdminRow {
   id: string;
   email: string;
   passwordHash: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ClientRow {
+  id: string;
+  name: string;
+  email: string;
+  passwordHash: string;
+  phone: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -76,12 +88,42 @@ export interface BookingRow {
   price: number;
   date: string;
   time: string;
+  clientId: string | null;
   clientName: string;
   clientPhone: string;
+  clientEmail: string;
   notes: string;
   status: BookingStatus;
+  paymentReference: string | null;
+  paymentStatus: "unpaid" | "paid";
+  commissionPercent: number;
+  commission: number;
+  creatorPayout: number;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface ReviewRow {
+  id: string;
+  bookingId: string;
+  creatorId: string;
+  clientId: string;
+  rating: number;
+  comment: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export function mapReview(r: ReviewRow): Review {
+  return {
+    id: r.id,
+    bookingId: r.bookingId,
+    creatorId: r.creatorId,
+    clientId: r.clientId,
+    rating: r.rating,
+    comment: r.comment,
+    createdAt: r.createdAt.toISOString(),
+  };
 }
 
 export interface ConversationRow {
@@ -138,6 +180,16 @@ export function mapVideo(v: VideoRow): CreatorVideo {
   };
 }
 
+export function mapClient(c: ClientRow): ClientProfile {
+  return {
+    id: c.id,
+    name: c.name,
+    email: c.email,
+    phone: c.phone,
+    createdAt: c.createdAt.toISOString(),
+  };
+}
+
 export function mapCreator(
   c: CreatorRow,
   services: ServiceRow[] = [],
@@ -177,11 +229,18 @@ export function mapBooking(b: BookingRow): Booking {
     price: b.price,
     date: b.date,
     time: b.time,
+    clientId: b.clientId ?? undefined,
     clientName: b.clientName,
     clientPhone: b.clientPhone,
+    clientEmail: b.clientEmail || undefined,
     notes: b.notes,
     status: b.status,
     createdAt: b.createdAt.toISOString(),
+    paymentReference: b.paymentReference ?? undefined,
+    paymentStatus: b.paymentStatus ?? "unpaid",
+    commissionPercent: b.commissionPercent ?? 0,
+    commission: b.commission ?? 0,
+    creatorPayout: b.creatorPayout ?? b.price,
   };
 }
 

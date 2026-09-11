@@ -8,7 +8,24 @@ import { defaultCategories } from "../src/lib/categories";
 import { defaultSiteContent } from "../src/lib/site-content";
 import { defaultAppSettings } from "../src/lib/app-settings";
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const connectionString = process.env.DATABASE_URL;
+
+// Without this check an unset or placeholder value surfaces as a confusing
+// DNS error, because pg falls back to a default host it can't resolve.
+if (!connectionString?.includes("://")) {
+  console.error(
+    connectionString
+      ? `DATABASE_URL doesn't look like a connection string: "${connectionString}"`
+      : "DATABASE_URL is not set."
+  );
+  console.error(
+    "Set it in .env to your Postgres URL, e.g.\n" +
+      '  DATABASE_URL="postgresql://user:password@host/dbname?sslmode=require"'
+  );
+  process.exit(1);
+}
+
+const pool = new Pool({ connectionString });
 
 function id(prefix: string, value?: string) {
   return value ?? `${prefix}_${crypto.randomUUID().replace(/-/g, "")}`;

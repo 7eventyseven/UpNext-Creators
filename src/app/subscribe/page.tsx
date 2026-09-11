@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Crown, Check, Zap, Star, TrendingUp } from "lucide-react";
 import {
   AppSettings,
@@ -8,6 +10,10 @@ import {
   formatNaira,
 } from "@/lib/app-settings";
 import { fetchAppSettings } from "@/lib/app-settings-client";
+import { getLoggedInCreator } from "@/lib/creator-auth";
+import { apiSend } from "@/lib/api-client";
+import { openPaystackCheckout } from "@/lib/paystack-inline";
+import { Creator } from "@/types";
 
 const icons = {
   free: Star,
@@ -16,15 +22,49 @@ const icons = {
 } as const;
 
 export default function SubscribePage() {
+  const router = useRouter();
   const [settings, setSettings] = useState<AppSettings>(defaultAppSettings);
+  const [creator, setCreator] = useState<Creator | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
-  const [subscribed, setSubscribed] = useState(false);
+  const [subscribed, setSubscribed] = useState<string | null>(null);
+  const [error, setError] = useState("");
   const [ready, setReady] = useState(false);
+  const [verifying, setVerifying] = useState(false);
 
   useEffect(() => {
-    fetchAppSettings()
-      .then(setSettings)
-      .finally(() => setReady(true));
+    const reference = new URLSearchParams(window.location.search).get(
+      "reference"
+    );
+
+    (async () => {
+      const [appSettings, loggedIn] = await Promise.all([
+        fetchAppSettings(),
+        getLoggedInCreator(),
+      ]);
+      setSettings(appSettings);
+      setCreator(loggedIn ?? null);
+
+      if (reference && loggedIn) {
+        setVerifying(true);
+        try {
+          const data = await apiSend<{ ok: boolean; tier: string }>(
+            "/api/payments/verify",
+            "POST",
+            { reference }
+          );
+          setSubscribed(data.tier);
+          window.history.replaceState({}, "", "/subscribe");
+        } catch (err) {
+          setError(
+            err instanceof Error ? err.message : "Could not confirm payment."
+          );
+        } finally {
+          setVerifying(false);
+        }
+      }
+
+      setReady(true);
+    })();
   }, []);
 
   const plans = (
@@ -38,22 +78,67 @@ export default function SubscribePage() {
     highlighted: id === "pro",
   }));
 
-  const handleSubscribe = (planId: string) => {
+  const handleSubscribe = async (planId: string) => {
     if (planId === "free") return;
+    setError("");
+
+    if (!creator) {
+      router.push("/signin?next=/subscribe");
+      return;
+    }
+
     setSelected(planId);
-    setTimeout(() => setSubscribed(true), 800);
+    try {
+      const checkout = await apiSend<{
+        authorizationUrl: string;
+        accessCode: string;
+        reference: string;
+        publicKey: string;
+        email: string;
+        amountKobo: number;
+        channels: string[];
+      }>("/api/payments/initialize", "POST", { tier: planId });
+
+      const paid = await openPaystackCheckout({
+        publicKey: checkout.publicKey,
+        email: checkout.email,
+        amountKobo: checkout.amountKobo,
+        reference: checkout.reference,
+        accessCode: checkout.accessCode,
+        authorizationUrl: checkout.authorizationUrl,
+        channels: checkout.channels ?? ["card"],
+      });
+
+      const data = await apiSend<{ ok: boolean; tier: string }>(
+        "/api/payments/verify",
+        "POST",
+        { reference: paid.reference }
+      );
+      setSubscribed(data.tier);
+      setSelected(null);
+    } catch (err) {
+      if (err instanceof Error && err.message === "Checkout closed") {
+        setSelected(null);
+        return;
+      }
+      setError(err instanceof Error ? err.message : "Could not start checkout.");
+      setSelected(null);
+    }
   };
 
-  if (!ready) {
+  if (!ready || verifying) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center">
+      <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-olive-600 border-t-transparent" />
+        {verifying && (
+          <p className="text-sm text-olive-600">Confirming your payment…</p>
+        )}
       </div>
     );
   }
 
-  if (subscribed && selected) {
-    const plan = plans.find((p) => p.id === selected);
+  if (subscribed) {
+    const plan = plans.find((p) => p.id === subscribed);
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center animate-fade-in">
         <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-olive-100">
@@ -63,18 +148,20 @@ export default function SubscribePage() {
           Welcome to {plan?.name}!
         </h1>
         <p className="mt-3 text-olive-600 leading-relaxed">
-          Your subscription is active. You&apos;re now ranked higher and ready to
-          receive more bookings from clients across Nigeria.
+          Payment received. You&apos;re now ranked higher and ready to receive
+          more bookings from clients across Nigeria.
         </p>
-        <a
-          href="/"
+        <Link
+          href="/dashboard"
           className="mt-6 inline-block rounded-xl bg-olive-600 px-6 py-3 font-semibold text-milky-50 hover:bg-olive-700"
         >
-          View Your Ranking
-        </a>
+          Go to dashboard
+        </Link>
       </div>
     );
   }
+
+  const currentTier = creator?.subscriptionTier ?? "free";
 
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6 py-8">
@@ -92,9 +179,16 @@ export default function SubscribePage() {
         </p>
       </div>
 
+      {error && (
+        <p className="mb-6 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-center text-sm text-red-600">
+          {error}
+        </p>
+      )}
+
       <div className="grid gap-6 md:grid-cols-3">
         {plans.map((plan) => {
           const Icon = plan.icon;
+          const isCurrent = currentTier === plan.id;
           return (
             <div
               key={plan.id}
@@ -154,7 +248,7 @@ export default function SubscribePage() {
               <button
                 type="button"
                 onClick={() => handleSubscribe(plan.id)}
-                disabled={plan.id === "free" || selected === plan.id}
+                disabled={plan.id === "free" || isCurrent || selected === plan.id}
                 className={`w-full rounded-xl py-3 font-semibold transition-colors ${
                   plan.highlighted
                     ? "bg-olive-600 text-milky-50 hover:bg-olive-700"
@@ -163,11 +257,13 @@ export default function SubscribePage() {
                       : "border border-olive-300 text-olive-700 hover:bg-olive-50"
                 } disabled:opacity-60`}
               >
-                {plan.id === "free"
-                  ? "Current Plan"
-                  : selected === plan.id
-                    ? "Processing..."
-                    : "Subscribe Now"}
+                {isCurrent
+                  ? "Current plan"
+                  : plan.id === "free"
+                    ? "Included"
+                    : selected === plan.id
+                      ? "Enter your card..."
+                      : "Pay with card"}
               </button>
             </div>
           );
@@ -175,8 +271,18 @@ export default function SubscribePage() {
       </div>
 
       <p className="mt-8 text-center text-sm text-olive-500">
-        Subscriptions renew monthly. Cancel anytime. Payment integration coming
-        soon.
+        Subscriptions are card-only via Paystack — no bank transfer or USSD.
+        Use a <span className="font-medium text-olive-700">test card</span> while
+        keys are in test mode: 4084 0840 8408 4081, any future date, any CVV.
+        {!creator && (
+          <>
+            {" "}
+            <Link href="/signin?next=/subscribe" className="font-semibold text-olive-700 underline">
+              Sign in
+            </Link>{" "}
+            as a creator first.
+          </>
+        )}
       </p>
     </div>
   );

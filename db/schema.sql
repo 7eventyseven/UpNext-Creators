@@ -24,6 +24,18 @@ CREATE TABLE IF NOT EXISTS "Admin" (
   "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS "Client" (
+  "id" TEXT PRIMARY KEY,
+  "name" TEXT NOT NULL,
+  "email" TEXT NOT NULL,
+  "passwordHash" TEXT NOT NULL,
+  "phone" TEXT NOT NULL DEFAULT '',
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "Client_email_key" ON "Client"(lower("email"));
+
 CREATE TABLE IF NOT EXISTS "Category" (
   "id" TEXT PRIMARY KEY,
   "name" TEXT NOT NULL UNIQUE,
@@ -90,16 +102,49 @@ CREATE TABLE IF NOT EXISTS "Booking" (
   "price" INTEGER NOT NULL,
   "date" TEXT NOT NULL,
   "time" TEXT NOT NULL,
+  "clientId" TEXT,
   "clientName" TEXT NOT NULL,
   "clientPhone" TEXT NOT NULL,
+  "clientEmail" TEXT NOT NULL DEFAULT '',
   "notes" TEXT NOT NULL DEFAULT '',
   "status" "BookingStatus" NOT NULL DEFAULT 'pending',
+  "paymentReference" TEXT,
+  "paymentStatus" TEXT NOT NULL DEFAULT 'unpaid',
+  "commissionPercent" INTEGER NOT NULL DEFAULT 0,
+  "commission" INTEGER NOT NULL DEFAULT 0,
+  "creatorPayout" INTEGER NOT NULL DEFAULT 0,
   "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+ALTER TABLE "Booking" ADD COLUMN IF NOT EXISTS "clientId" TEXT;
+ALTER TABLE "Booking" ADD COLUMN IF NOT EXISTS "clientEmail" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "Booking" ADD COLUMN IF NOT EXISTS "paymentReference" TEXT;
+ALTER TABLE "Booking" ADD COLUMN IF NOT EXISTS "paymentStatus" TEXT NOT NULL DEFAULT 'unpaid';
+ALTER TABLE "Booking" ADD COLUMN IF NOT EXISTS "commissionPercent" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "Booking" ADD COLUMN IF NOT EXISTS "commission" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "Booking" ADD COLUMN IF NOT EXISTS "creatorPayout" INTEGER NOT NULL DEFAULT 0;
+
 CREATE INDEX IF NOT EXISTS "Booking_creatorId_idx" ON "Booking"("creatorId");
 CREATE INDEX IF NOT EXISTS "Booking_status_idx" ON "Booking"("status");
+CREATE INDEX IF NOT EXISTS "Booking_clientId_idx" ON "Booking"("clientId");
+CREATE UNIQUE INDEX IF NOT EXISTS "Booking_paymentReference_key"
+  ON "Booking"("paymentReference");
+
+-- One rating per booking. Creator.rating/reviewCount are recomputed from here.
+CREATE TABLE IF NOT EXISTS "Review" (
+  "id" TEXT PRIMARY KEY,
+  "bookingId" TEXT NOT NULL UNIQUE REFERENCES "Booking"("id") ON DELETE CASCADE,
+  "creatorId" TEXT NOT NULL,
+  "clientId" TEXT NOT NULL,
+  "rating" INTEGER NOT NULL CHECK ("rating" BETWEEN 1 AND 5),
+  "comment" TEXT NOT NULL DEFAULT '',
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS "Review_creatorId_idx" ON "Review"("creatorId");
+CREATE INDEX IF NOT EXISTS "Review_clientId_idx" ON "Review"("clientId");
 
 CREATE TABLE IF NOT EXISTS "Conversation" (
   "id" TEXT PRIMARY KEY,

@@ -18,6 +18,7 @@ const planSchema = z.object({
 const settingsSchema = z.object({
   maintenanceMode: z.boolean(),
   maintenanceMessage: z.string().min(1),
+  bookingCommissionPercent: z.number().int().min(0).max(50),
   subscriptions: z.object({
     free: planSchema,
     pro: planSchema,

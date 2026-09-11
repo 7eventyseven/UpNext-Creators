@@ -19,13 +19,8 @@ import {
 import { useState, useEffect, useMemo } from "react";
 import { Logo } from "@/components/Logo";
 import { creatorSignOut, getLoggedInCreator } from "@/lib/creator-auth";
-import {
-  clearAppRole,
-  clearClient,
-  getAppRole,
-  getClient,
-} from "@/lib/client-auth";
-import { Creator } from "@/types";
+import { clientSignOut, getLoggedInClient } from "@/lib/client-auth";
+import { ClientProfile, Creator } from "@/types";
 import { defaultSiteContent, SiteContent } from "@/lib/site-content";
 import { fetchSiteContent } from "@/lib/site-content-client";
 import { AppSettings, defaultAppSettings } from "@/lib/app-settings";
@@ -43,13 +38,13 @@ export function Header() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [creator, setCreator] = useState<Creator | null>(null);
-  const [isClient, setIsClient] = useState(false);
+  const [client, setClient] = useState<ClientProfile | null>(null);
   const [content, setContent] = useState<SiteContent>(defaultSiteContent);
   const [settings, setSettings] = useState<AppSettings>(defaultAppSettings);
 
   useEffect(() => {
     getLoggedInCreator().then((c) => setCreator(c ?? null));
-    setIsClient(getAppRole() === "client" && Boolean(getClient()));
+    getLoggedInClient().then((c) => setClient(c ?? null));
     fetchSiteContent().then(setContent);
     fetchAppSettings().then(setSettings);
   }, [pathname]);
@@ -63,7 +58,7 @@ export function Header() {
         { href: "/subscribe", label: "Go Pro", icon: Crown },
       ];
     }
-    if (isClient) {
+    if (client) {
       return [
         { href: "/client", label: "My Briefs", icon: FileText },
         { href: "/brief", label: "New Brief", icon: Home },
@@ -72,18 +67,20 @@ export function Header() {
       ];
     }
     return [];
-  }, [creator, isClient]);
+  }, [creator, client]);
 
-  const isAppUser = Boolean(creator || isClient);
-  const homeHref = creator ? "/dashboard" : isClient ? "/client" : "/";
+  const isAppUser = Boolean(creator || client);
+  const homeHref = creator ? "/dashboard" : client ? "/client" : "/";
 
   const handleSignOut = async () => {
     if (creator) {
       await creatorSignOut();
       setCreator(null);
     }
-    clearClient();
-    clearAppRole();
+    if (client) {
+      await clientSignOut();
+      setClient(null);
+    }
     window.location.href = "/";
   };
 
@@ -175,9 +172,9 @@ export function Header() {
                     </span>
                   </>
                 )}
-                {isClient && !creator && (
+                {client && !creator && (
                   <span className="text-sm font-medium text-olive-700">
-                    {getClient()?.name.split(" ")[0]}
+                    {client.name.split(" ")[0]}
                   </span>
                 )}
               </div>
@@ -211,7 +208,7 @@ export function Header() {
                 Log in
               </Link>
               <Link
-                href="/#start"
+                href="/get-started"
                 className="rounded-full bg-[#2f3a1c] px-5 py-2 text-[13.5px] font-semibold text-milky-50 hover:bg-olive-800"
               >
                 Get started
@@ -298,7 +295,7 @@ export function Header() {
                   Log in
                 </Link>
                 <Link
-                  href="/#start"
+                  href="/get-started"
                   onClick={() => setMobileOpen(false)}
                   className="flex items-center rounded-lg px-3 py-2.5 text-sm font-medium bg-[#2f3a1c] text-milky-50"
                 >

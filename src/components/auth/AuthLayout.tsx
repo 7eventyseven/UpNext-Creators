@@ -2,8 +2,15 @@
 
 import Link from "next/link";
 import { ArrowLeft, Camera, TrendingUp, Users } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
-const perks = [
+export interface AuthPerk {
+  icon: LucideIcon;
+  title: string;
+  text: string;
+}
+
+const creatorPerks: AuthPerk[] = [
   {
     icon: Users,
     title: "Get discovered nationwide",
@@ -26,9 +33,18 @@ interface AuthLayoutProps {
   title: string;
   subtitle: string;
   badge?: string;
+  perks?: AuthPerk[];
+  footnote?: string;
 }
 
-export function AuthLayout({ children, title, subtitle, badge }: AuthLayoutProps) {
+export function AuthLayout({
+  children,
+  title,
+  subtitle,
+  badge,
+  perks = creatorPerks,
+  footnote = "Nigeria's creator marketplace — built for photographers, musicians, designers, and more.",
+}: AuthLayoutProps) {
   return (
     <div className="min-h-[calc(100vh-4rem)] lg:grid lg:grid-cols-2">
       <aside className="relative hidden lg:flex flex-col justify-between overflow-hidden bg-gradient-to-br from-olive-700 via-olive-800 to-olive-950 p-10 text-milky-50">
@@ -76,10 +92,7 @@ export function AuthLayout({ children, title, subtitle, badge }: AuthLayoutProps
           </ul>
         </div>
 
-        <p className="relative text-sm text-olive-200/70">
-          Nigeria&apos;s creator marketplace — built for photographers, musicians,
-          designers, and more.
-        </p>
+        <p className="relative text-sm text-olive-200/70">{footnote}</p>
       </aside>
 
       <div className="flex flex-col justify-center px-4 py-10 sm:px-8 lg:px-12">

@@ -8,6 +8,8 @@ export interface SubscriptionPlanSettings {
 export interface AppSettings {
   maintenanceMode: boolean;
   maintenanceMessage: string;
+  /** Share of each booking that stays with UpNext (client still pays the full service price). */
+  bookingCommissionPercent: number;
   subscriptions: {
     free: SubscriptionPlanSettings;
     pro: SubscriptionPlanSettings;
@@ -19,6 +21,7 @@ export const defaultAppSettings: AppSettings = {
   maintenanceMode: false,
   maintenanceMessage:
     "We're doing a bit of maintenance. Creator sign in and registration are temporarily unavailable. Please check back soon.",
+  bookingCommissionPercent: 15,
   subscriptions: {
     free: {
       name: "Free",
@@ -39,6 +42,7 @@ export const defaultAppSettings: AppSettings = {
         "Everything in Free",
         "Pro badge on profile",
         "Higher ranking priority",
+        "First to be notified on new briefs",
         "Featured in category lists",
         "Monthly analytics summary",
       ],
@@ -51,6 +55,7 @@ export const defaultAppSettings: AppSettings = {
         "Everything in Pro",
         "Top Creator badge",
         "#1 priority ranking",
+        "First in line for every matching brief",
         "Homepage featured spot",
         "Discount price highlighting",
         "Priority customer support",
@@ -78,6 +83,7 @@ export function mergeAppSettings(partial: unknown): AppSettings {
         : base.features,
   });
 
+  const commission = Number(incoming.bookingCommissionPercent);
   return {
     maintenanceMode:
       typeof incoming.maintenanceMode === "boolean"
@@ -86,6 +92,10 @@ export function mergeAppSettings(partial: unknown): AppSettings {
     maintenanceMessage:
       incoming.maintenanceMessage?.trim() ||
       defaultAppSettings.maintenanceMessage,
+    bookingCommissionPercent:
+      Number.isFinite(commission)
+        ? Math.min(50, Math.max(0, Math.round(commission)))
+        : defaultAppSettings.bookingCommissionPercent,
     subscriptions: {
       free: mergePlan(
         defaultAppSettings.subscriptions.free,
@@ -101,6 +111,13 @@ export function mergeAppSettings(partial: unknown): AppSettings {
       ),
     },
   };
+}
+
+export function splitBookingAmount(price: number, percent: number) {
+  const commissionPercent = Math.min(50, Math.max(0, Math.round(percent)));
+  const commission = Math.round((price * commissionPercent) / 100);
+  const creatorPayout = Math.max(0, price - commission);
+  return { commissionPercent, commission, creatorPayout };
 }
 
 export function formatNaira(amount: number): string {

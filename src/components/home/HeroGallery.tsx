@@ -1,31 +1,54 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import type { CSSProperties } from "react";
+
+type DriftStyle = CSSProperties & {
+  "--drift-x": string;
+  "--drift-y": string;
+  "--sway": string;
+};
 
 const HERO_IMAGES = [
   {
     src: "https://images.unsplash.com/photo-1502982720700-bfff97f2ecac?auto=format&fit=crop&w=800&q=80",
     alt: "Photographer at work",
-    className:
-      "absolute left-0 top-[8%] z-[1] h-[84%] w-[36%] -rotate-[8deg] overflow-hidden rounded-[1.6rem] bg-olive-100 shadow-[0_24px_50px_rgba(47,58,28,0.18)]",
+    position: "left-0 top-[8%] z-[1] h-[84%] w-[36%]",
+    frame: "rounded-[1.6rem] shadow-[0_24px_50px_rgba(47,58,28,0.18)]",
+    tilt: -8,
+    duration: "9s",
+    delay: "0s",
+    drift: { "--drift-x": "10px", "--drift-y": "-18px", "--sway": "1.8deg" },
   },
   {
     src: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=800&q=80",
     alt: "Portrait of a creative",
-    className:
-      "absolute left-[30%] top-0 z-[2] h-[90%] w-[38%] overflow-hidden rounded-[1.6rem] bg-olive-100 shadow-[0_28px_55px_rgba(47,58,28,0.2)]",
+    position: "left-[30%] top-0 z-[2] h-[90%] w-[38%]",
+    frame: "rounded-[1.6rem] shadow-[0_28px_55px_rgba(47,58,28,0.2)]",
+    tilt: 0,
+    duration: "11s",
+    delay: "-1.5s",
+    drift: { "--drift-x": "-8px", "--drift-y": "-14px", "--sway": "-1.4deg" },
   },
   {
     src: "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?auto=format&fit=crop&w=800&q=80",
     alt: "Live music performance",
-    className:
-      "absolute right-[8%] top-[2%] z-[1] h-[70%] w-[30%] rotate-[8deg] overflow-hidden rounded-[1.5rem] bg-olive-100 shadow-[0_24px_50px_rgba(47,58,28,0.16)]",
+    position: "right-[8%] top-[2%] z-[1] h-[70%] w-[30%]",
+    frame: "rounded-[1.5rem] shadow-[0_24px_50px_rgba(47,58,28,0.16)]",
+    tilt: 8,
+    duration: "8.5s",
+    delay: "-3s",
+    drift: { "--drift-x": "12px", "--drift-y": "-20px", "--sway": "2.2deg" },
   },
   {
     src: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=800&q=80",
     alt: "Designer working on a laptop",
-    className:
-      "absolute bottom-[2%] right-[-2%] z-[3] h-[36%] w-[26%] rotate-[7deg] overflow-hidden rounded-[1.15rem] bg-olive-100 shadow-[0_18px_40px_rgba(47,58,28,0.16)]",
+    position: "bottom-[2%] right-[-2%] z-[3] h-[36%] w-[26%]",
+    frame: "rounded-[1.15rem] shadow-[0_18px_40px_rgba(47,58,28,0.16)]",
+    tilt: 7,
+    duration: "7.5s",
+    delay: "-2s",
+    drift: { "--drift-x": "-14px", "--drift-y": "-12px", "--sway": "-2.4deg" },
   },
 ];
 
@@ -39,15 +62,41 @@ export function HeroGallery() {
   return (
     <div className="relative mx-auto h-[300px] w-full max-w-[520px] lg:h-[390px] lg:max-w-none">
       {HERO_IMAGES.map((image) => (
-        <div key={image.src} className={image.className}>
-          <Image
-            src={image.src}
-            alt={image.alt}
-            fill
-            sizes="(max-width: 1024px) 50vw, 280px"
-            className="object-cover"
-            priority
-          />
+        <div
+          key={image.src}
+          className={`absolute ${image.position} transition-transform duration-500 ease-out hover:z-[6] hover:scale-[1.04]`}
+        >
+          <div
+            className="hero-drift h-full w-full"
+            style={
+              {
+                ...image.drift,
+                animationDuration: image.duration,
+                animationDelay: image.delay,
+              } as DriftStyle
+            }
+          >
+            <div
+              className={`hero-sway relative h-full w-full overflow-hidden bg-olive-100 ${image.frame}`}
+              style={
+                {
+                  ...image.drift,
+                  rotate: `${image.tilt}deg`,
+                  animationDuration: image.duration,
+                  animationDelay: image.delay,
+                } as DriftStyle
+              }
+            >
+              <Image
+                src={image.src}
+                alt={image.alt}
+                fill
+                sizes="(max-width: 1024px) 50vw, 280px"
+                className="object-cover"
+                priority
+              />
+            </div>
+          </div>
         </div>
       ))}
 
@@ -59,30 +108,43 @@ export function HeroGallery() {
         <span>And more</span>
       </div>
 
-      <Link
-        href="/explore"
-        className="absolute bottom-[14%] left-[18%] z-[5] flex items-center gap-3 rounded-full bg-[#2f3a1c] py-1.5 pl-1.5 pr-1.5 text-milky-50 shadow-[0_16px_40px_rgba(47,58,28,0.28)] transition-transform hover:-translate-y-0.5"
+      <div
+        className="hero-drift absolute bottom-[14%] left-[18%] z-[5]"
+        style={
+          {
+            "--drift-x": "6px",
+            "--drift-y": "-10px",
+            "--sway": "0deg",
+            animationDuration: "6.5s",
+            animationDelay: "-1s",
+          } as DriftStyle
+        }
       >
-        <span className="flex -space-x-2 pl-1">
-          {AVATARS.map((src) => (
-            <span
-              key={src}
-              className="relative h-8 w-8 overflow-hidden rounded-full ring-2 ring-[#2f3a1c]"
-            >
-              <Image src={src} alt="" fill sizes="32px" className="object-cover" />
-            </span>
-          ))}
-        </span>
-        <span className="pr-1 leading-tight">
-          <span className="block text-[13px] font-semibold">Talented creatives</span>
-          <span className="block text-[11px] text-olive-100/80">
-            Ready for your next project
+        <Link
+          href="/explore"
+          className="flex items-center gap-3 rounded-full bg-[#2f3a1c] py-1.5 pl-1.5 pr-1.5 text-milky-50 shadow-[0_16px_40px_rgba(47,58,28,0.28)] transition-transform hover:-translate-y-0.5"
+        >
+          <span className="flex -space-x-2 pl-1">
+            {AVATARS.map((src) => (
+              <span
+                key={src}
+                className="relative h-8 w-8 overflow-hidden rounded-full ring-2 ring-[#2f3a1c]"
+              >
+                <Image src={src} alt="" fill sizes="32px" className="object-cover" />
+              </span>
+            ))}
           </span>
-        </span>
-        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-olive-700/80">
-          <ChevronRight size={16} />
-        </span>
-      </Link>
+          <span className="pr-1 leading-tight">
+            <span className="block text-[13px] font-semibold">Talented creatives</span>
+            <span className="block text-[11px] text-olive-100/80">
+              Ready for your next project
+            </span>
+          </span>
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-olive-700/80">
+            <ChevronRight size={16} />
+          </span>
+        </Link>
+      </div>
     </div>
   );
 }

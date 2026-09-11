@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Phone } from "lucide-react";
 import { StateDropdown } from "@/components/StateDropdown";
 import { defaultCategories } from "@/lib/categories";
 import { nigeriaStates } from "@/lib/nigeria-states";
@@ -11,13 +11,16 @@ import {
   createBrief,
   occasionByCategory,
 } from "@/lib/briefs";
-import { getClient, saveClient, setAppRole } from "@/lib/client-auth";
+import { getLoggedInClient, setAppRole } from "@/lib/client-auth";
+import { BRIEF_STEPS as steps, CLIENT_FLOW_STEPS } from "@/lib/client-flow";
 import { getSortedCreators } from "@/data/creators";
-
-const steps = ["Need", "Details", "Contact"] as const;
+import type { ClientProfile } from "@/types";
 
 export default function BriefPage() {
   const router = useRouter();
+  const [client, setClient] = useState<ClientProfile | null>(null);
+  /** Set when arriving straight from registration, so the progress bar continues. */
+  const [justRegistered, setJustRegistered] = useState(false);
   const [step, setStep] = useState(0);
   const [category, setCategory] = useState(defaultCategories[0]);
   const [occasion, setOccasion] = useState("");
@@ -27,10 +30,22 @@ export default function BriefPage() {
     budgetOptions[1].value
   );
   const [notes, setNotes] = useState("");
-  const [name, setName] = useState(getClient()?.name ?? "");
-  const [phone, setPhone] = useState(getClient()?.phone ?? "");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    setJustRegistered(
+      new URLSearchParams(window.location.search).get("new") === "1"
+    );
+    void (async () => {
+      const loggedIn = await getLoggedInClient();
+      if (!loggedIn) {
+        router.replace("/client/register");
+        return;
+      }
+      setClient(loggedIn);
+    })();
+  }, [router]);
 
   const occasions = useMemo(
     () => occasionByCategory[category] ?? ["Other"],
@@ -40,9 +55,7 @@ export default function BriefPage() {
   const canNext =
     step === 0
       ? Boolean(category && (occasion || occasions[0]))
-      : step === 1
-        ? Boolean(state && budget)
-        : Boolean(name.trim() && phone.trim());
+      : Boolean(state && budget);
 
   const goNext = () => {
     setError("");
@@ -51,15 +64,11 @@ export default function BriefPage() {
   };
 
   const handleSubmit = async () => {
-    if (!name.trim() || !phone.trim()) {
-      setError("Please enter your name and WhatsApp number.");
-      return;
-    }
+    if (!client) return;
     setSubmitting(true);
     setError("");
     try {
       setAppRole("client");
-      const client = saveClient({ name, phone });
       let creators;
       try {
         creators = await getSortedCreators();
@@ -85,6 +94,17 @@ export default function BriefPage() {
     }
   };
 
+  if (!client) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-olive-600 border-t-transparent" />
+      </div>
+    );
+  }
+
+  const offset = justRegistered ? CLIENT_FLOW_STEPS.length - steps.length : 0;
+  const trackLength = steps.length + offset;
+
   return (
     <div className="mx-auto max-w-lg px-4 sm:px-6 py-8 sm:py-12">
       <button
@@ -98,14 +118,14 @@ export default function BriefPage() {
 
       <div className="mb-8">
         <p className="text-sm font-medium text-olive-500 mb-2">
-          Step {step + 1} of {steps.length} · {steps[step]}
+          Step {step + 1 + offset} of {trackLength} · {steps[step]}
         </p>
         <div className="flex gap-2">
-          {steps.map((_, i) => (
+          {Array.from({ length: trackLength }, (_, i) => (
             <div
-              key={steps[i]}
+              key={i}
               className={`h-1.5 flex-1 rounded-full ${
-                i <= step ? "bg-olive-600" : "bg-olive-200"
+                i <= step + offset ? "bg-olive-600" : "bg-olive-200"
               }`}
             />
           ))}
@@ -228,39 +248,11 @@ export default function BriefPage() {
                 className="w-full rounded-xl border border-olive-200 bg-white px-3 py-2.5 text-olive-900 focus:border-olive-500 focus:outline-none focus:ring-2 focus:ring-olive-200"
               />
             </div>
-          </>
-        )}
-
-        {step === 2 && (
-          <>
-            <div>
-              <h1 className="text-2xl font-bold text-olive-900">How do we reach you?</h1>
-              <p className="mt-1 text-sm text-olive-600">
-                Creatives who accept can contact you to lock in the booking.
-              </p>
-            </div>
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-olive-700">
-                Your name
-              </label>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-xl border border-olive-200 bg-white px-3 py-2.5 text-olive-900 focus:border-olive-500 focus:outline-none focus:ring-2 focus:ring-olive-200"
-                placeholder="Ada Okafor"
-              />
-            </div>
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-olive-700">
-                WhatsApp number
-              </label>
-              <input
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="w-full rounded-xl border border-olive-200 bg-white px-3 py-2.5 text-olive-900 focus:border-olive-500 focus:outline-none focus:ring-2 focus:ring-olive-200"
-                placeholder="2348012345678"
-              />
-            </div>
+            <p className="flex items-start gap-2 rounded-xl bg-olive-50 px-4 py-3 text-sm text-olive-700">
+              <Phone size={14} className="mt-0.5 shrink-0" />
+              Creatives who accept will reach {client.name.split(" ")[0]} on{" "}
+              {client.phone}.
+            </p>
           </>
         )}
 

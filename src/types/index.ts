@@ -45,6 +45,8 @@ export interface CreatorAccount {
   createdAt: string;
 }
 
+export type BookingPaymentStatus = "unpaid" | "paid";
+
 export interface Booking {
   id: string;
   creatorId: string;
@@ -54,11 +56,21 @@ export interface Booking {
   price: number;
   date: string;
   time: string;
+  clientId?: string;
   clientName: string;
   clientPhone: string;
+  clientEmail?: string;
   notes: string;
   status: "pending" | "confirmed" | "completed" | "cancelled";
   createdAt: string;
+  /** Star rating this client left for the booking, when they've rated it. */
+  reviewRating?: number;
+  reviewComment?: string;
+  paymentReference?: string;
+  paymentStatus?: BookingPaymentStatus;
+  commissionPercent?: number;
+  commission?: number;
+  creatorPayout?: number;
 }
 
 export interface ChatMessage {
@@ -91,6 +103,8 @@ export interface BriefInvite {
   city: string;
   rating: number;
   status: BriefInviteStatus;
+  /** Subscribed creatives are notified in the first wave. */
+  priority?: boolean;
   respondedAt?: string;
 }
 
@@ -108,11 +122,25 @@ export interface Brief {
   status: "open" | "matched" | "closed";
   invites: BriefInvite[];
   createdAt: string;
+  /** Free creatives see this brief after this time, unless all priority invites have replied. */
+  priorityUntil?: string;
 }
 
 export interface ClientProfile {
   id: string;
   name: string;
+  email: string;
   phone: string;
+  createdAt: string;
+}
+
+export interface Review {
+  id: string;
+  bookingId: string;
+  creatorId: string;
+  clientId: string;
+  /** 1–5 stars. */
+  rating: number;
+  comment: string;
   createdAt: string;
 }

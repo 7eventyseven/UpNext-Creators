@@ -1,10 +1,22 @@
 "use client";
 
-import { useState } from "react";
-import { X, Calendar, Clock, User, Phone, MessageSquare, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  X,
+  Calendar,
+  Clock,
+  User,
+  Phone,
+  MessageSquare,
+  Loader2,
+  Mail,
+  ShieldCheck,
+} from "lucide-react";
 import { Creator, Service } from "@/types";
 import { formatPrice } from "@/data/creators";
-import { saveBooking } from "@/lib/storage";
+import { apiSend } from "@/lib/api-client";
+import { getLoggedInClient } from "@/lib/client-auth";
+import { openPaystackCheckout } from "@/lib/paystack-inline";
 
 interface BookingModalProps {
   creator: Creator;
@@ -22,6 +34,7 @@ export function BookingModal({
   const [form, setForm] = useState({
     clientName: "",
     clientPhone: "",
+    clientEmail: "",
     date: "",
     time: "",
     notes: "",
@@ -29,13 +42,33 @@ export function BookingModal({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
+  // Signed-in clients shouldn't retype what their account already holds.
+  useEffect(() => {
+    void (async () => {
+      const client = await getLoggedInClient();
+      if (!client) return;
+      setForm((prev) => ({
+        ...prev,
+        clientName: prev.clientName || client.name,
+        clientPhone: prev.clientPhone || client.phone,
+        clientEmail: prev.clientEmail || client.email,
+      }));
+    })();
+  }, []);
+
   const price = service.discountPrice ?? service.price;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    if (!form.clientName || !form.clientPhone || !form.date || !form.time) {
+    if (
+      !form.clientName ||
+      !form.clientPhone ||
+      !form.clientEmail ||
+      !form.date ||
+      !form.time
+    ) {
       setError("Please fill in all required fields.");
       return;
     }
@@ -43,22 +76,44 @@ export function BookingModal({
     setSubmitting(true);
 
     try {
-      await saveBooking({
+      const checkout = await apiSend<{
+        authorizationUrl: string;
+        accessCode: string;
+        reference: string;
+        publicKey: string;
+        email: string;
+        amountKobo: number;
+      }>("/api/payments/booking/initialize", "POST", {
         creatorId: creator.id,
-        creatorName: creator.name,
         serviceId: service.id,
-        serviceName: service.name,
-        price,
         date: form.date,
         time: form.time,
         clientName: form.clientName,
         clientPhone: form.clientPhone,
+        clientEmail: form.clientEmail,
         notes: form.notes,
+      });
+
+      const paid = await openPaystackCheckout({
+        publicKey: checkout.publicKey,
+        email: checkout.email,
+        amountKobo: checkout.amountKobo,
+        reference: checkout.reference,
+        accessCode: checkout.accessCode,
+        authorizationUrl: checkout.authorizationUrl,
+      });
+
+      await apiSend("/api/payments/verify", "POST", {
+        reference: paid.reference,
       });
       onSuccess();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not create booking.");
+      if (err instanceof Error && err.message === "Checkout closed") {
+        setSubmitting(false);
+        return;
+      }
+      setError(err instanceof Error ? err.message : "Could not complete payment.");
       setSubmitting(false);
     }
   };
@@ -86,6 +141,11 @@ export function BookingModal({
             <p className="text-2xl font-bold text-olive-800 mt-1">
               {formatPrice(price)}
             </p>
+            <p className="mt-2 flex items-start gap-1.5 text-xs text-olive-600 leading-relaxed">
+              <ShieldCheck size={14} className="mt-0.5 shrink-0" />
+              You pay UpNext through Paystack. We hold the funds, take our
+              platform fee, and pay the creative after the job.
+            </p>
           </div>
 
           <div>
@@ -99,6 +159,20 @@ export function BookingModal({
               onChange={(e) => setForm({ ...form, clientName: e.target.value })}
               className="w-full rounded-lg border border-olive-200 bg-milky-50 px-3 py-2.5 text-olive-900 placeholder:text-olive-400 focus:border-olive-500 focus:outline-none focus:ring-2 focus:ring-olive-200"
               placeholder="Enter your full name"
+            />
+          </div>
+
+          <div>
+            <label className="flex items-center gap-2 text-sm font-medium text-olive-700 mb-1.5">
+              <Mail size={14} />
+              Email *
+            </label>
+            <input
+              type="email"
+              value={form.clientEmail}
+              onChange={(e) => setForm({ ...form, clientEmail: e.target.value })}
+              className="w-full rounded-lg border border-olive-200 bg-milky-50 px-3 py-2.5 text-olive-900 placeholder:text-olive-400 focus:border-olive-500 focus:outline-none focus:ring-2 focus:ring-olive-200"
+              placeholder="you@email.com"
             />
           </div>
 
@@ -170,7 +244,7 @@ export function BookingModal({
             className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-olive-600 py-3 font-semibold text-milky-50 transition-colors hover:bg-olive-700 disabled:opacity-60"
           >
             {submitting && <Loader2 size={18} className="animate-spin" />}
-            {submitting ? "Booking..." : "Confirm Booking"}
+            {submitting ? "Opening Paystack..." : `Pay ${formatPrice(price)} with Paystack`}
           </button>
         </form>
       </div>

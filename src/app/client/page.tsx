@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FileText, Plus, MapPin, Clock, CheckCircle } from "lucide-react";
-import { getClient, clearClient, clearAppRole } from "@/lib/client-auth";
+import { clientSignOut, getLoggedInClient } from "@/lib/client-auth";
 import { budgetLabel, getClientBriefs } from "@/lib/briefs";
 import type { Brief, ClientProfile } from "@/types";
 
@@ -14,19 +14,20 @@ export default function ClientHubPage() {
   const [briefs, setBriefs] = useState<Brief[]>([]);
 
   useEffect(() => {
-    const c = getClient();
-    if (!c) {
-      router.replace("/brief");
-      return;
-    }
-    setClient(c);
-    setBriefs(getClientBriefs(c.id));
+    void (async () => {
+      const c = await getLoggedInClient();
+      if (!c) {
+        router.replace("/client/signin?next=/client");
+        return;
+      }
+      setClient(c);
+      setBriefs(getClientBriefs(c.id));
+    })();
   }, [router]);
 
-  const signOut = () => {
-    clearClient();
-    clearAppRole();
-    router.push("/");
+  const signOut = async () => {
+    await clientSignOut();
+    window.location.href = "/";
   };
 
   if (!client) return null;
@@ -51,7 +52,7 @@ export default function ClientHubPage() {
           </Link>
           <button
             type="button"
-            onClick={signOut}
+            onClick={() => void signOut()}
             className="rounded-xl border border-olive-200 px-4 py-2.5 text-sm font-medium text-olive-700 hover:bg-olive-50"
           >
             Sign out

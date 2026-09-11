@@ -337,13 +337,23 @@ export default function RegisterPage() {
           {loading ? "Creating your account..." : "Create Creator Account"}
         </button>
 
-        <p className="text-center text-sm text-olive-600 pb-4">
+        <p className="text-center text-sm text-olive-600">
           Already have an account?{" "}
           <Link
             href="/signin"
             className="font-semibold text-olive-700 hover:text-olive-900 underline-offset-2 hover:underline"
           >
             Sign in
+          </Link>
+        </p>
+
+        <p className="text-center text-xs text-olive-500 pb-4">
+          Looking to hire instead?{" "}
+          <Link
+            href="/client/register"
+            className="font-medium text-olive-700 hover:underline"
+          >
+            Create a client account
           </Link>
         </p>
       </form>

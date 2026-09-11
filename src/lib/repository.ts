@@ -4,13 +4,17 @@ import {
   AdminRow,
   BookingRow,
   CategoryRow,
+  ClientRow,
   ConversationRow,
   CreatorRow,
   mapBooking,
+  mapClient,
   mapConversation,
   mapCreator,
   mapMessage,
+  mapReview,
   MessageRow,
+  ReviewRow,
   ServiceRow,
   SiteSettingsRow,
   AppSettingsRow,
@@ -166,6 +170,57 @@ export async function findCreatorById(id: string): Promise<Creator | null> {
   if (!row) return null;
   const { servicesByCreator, videosByCreator } = await loadCreatorExtras([id]);
   return mapCreator(row, servicesByCreator.get(id) ?? [], videosByCreator.get(id) ?? []);
+}
+
+export async function findClientById(id: string) {
+  const row = await queryOne<ClientRow>(`SELECT * FROM "Client" WHERE id = $1`, [
+    id,
+  ]);
+  return row ? mapClient(row) : null;
+}
+
+export async function findClientByEmail(email: string) {
+  const row = await queryOne<ClientRow>(
+    `SELECT * FROM "Client" WHERE lower(email) = lower($1)`,
+    [email]
+  );
+  return row ? { row, client: mapClient(row) } : null;
+}
+
+export async function createClient(input: {
+  name: string;
+  email: string;
+  passwordHash: string;
+  phone: string;
+}) {
+  const row = await queryOne<ClientRow>(
+    `INSERT INTO "Client" (id, name, email, "passwordHash", phone)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING *`,
+    [
+      createId("client"),
+      input.name,
+      input.email,
+      input.passwordHash,
+      input.phone,
+    ]
+  );
+  if (!row) throw new Error("Could not create client");
+  return mapClient(row);
+}
+
+export async function updateClientProfile(
+  id: string,
+  input: { name: string; phone: string }
+) {
+  const row = await queryOne<ClientRow>(
+    `UPDATE "Client"
+        SET name = $2, phone = $3, "updatedAt" = CURRENT_TIMESTAMP
+      WHERE id = $1
+      RETURNING *`,
+    [id, input.name, input.phone]
+  );
+  return row ? mapClient(row) : null;
 }
 
 export async function findCreatorRowById(id: string) {
@@ -405,6 +460,20 @@ export async function updateCreatorProfile(
   return creator;
 }
 
+export async function setCreatorSubscription(
+  id: string,
+  tier: "pro" | "premium"
+) {
+  await query(
+    `UPDATE "Creator"
+     SET "isSubscribed" = true,
+         "subscriptionTier" = $2,
+         "updatedAt" = CURRENT_TIMESTAMP
+     WHERE id = $1`,
+    [id, tier]
+  );
+}
+
 export async function deleteCreator(id: string) {
   await query(`DELETE FROM "Creator" WHERE id = $1`, [id]);
 }
@@ -419,6 +488,103 @@ export async function listBookings(creatorId?: string | null) {
         `SELECT * FROM "Booking" ORDER BY "createdAt" DESC`
       );
   return rows.map(mapBooking);
+}
+
+/**
+ * A client's own bookings, with any rating they already left joined in so the
+ * UI knows which ones still need one.
+ */
+export async function listClientBookings(clientId: string) {
+  const rows = await queryAll<BookingRow & { reviewRating: number | null; reviewComment: string | null }>(
+    `SELECT b.*, r.rating AS "reviewRating", r.comment AS "reviewComment"
+       FROM "Booking" b
+       LEFT JOIN "Review" r ON r."bookingId" = b.id
+      WHERE b."clientId" = $1
+      ORDER BY b."createdAt" DESC`,
+    [clientId]
+  );
+  return rows.map((row) => ({
+    ...mapBooking(row),
+    reviewRating: row.reviewRating ?? undefined,
+    reviewComment: row.reviewComment ?? undefined,
+  }));
+}
+
+export async function findBookingById(id: string) {
+  const row = await queryOne<BookingRow>(
+    `SELECT * FROM "Booking" WHERE id = $1`,
+    [id]
+  );
+  return row ? mapBooking(row) : null;
+}
+
+export async function findBookingByPaymentReference(reference: string) {
+  const row = await queryOne<BookingRow>(
+    `SELECT * FROM "Booking" WHERE "paymentReference" = $1`,
+    [reference]
+  );
+  return row ? mapBooking(row) : null;
+}
+
+export async function createPaidBooking(input: {
+  creatorId: string;
+  creatorName: string;
+  serviceId: string;
+  serviceName: string;
+  price: number;
+  date: string;
+  time: string;
+  clientId: string | null;
+  clientName: string;
+  clientPhone: string;
+  clientEmail: string;
+  notes: string;
+  paymentReference: string;
+  commissionPercent: number;
+  commission: number;
+  creatorPayout: number;
+}) {
+  const existing = await findBookingByPaymentReference(input.paymentReference);
+  if (existing) return existing;
+
+  const id = createId("bkg");
+  const row = await queryOne<BookingRow>(
+    `INSERT INTO "Booking" (
+      id, "creatorId", "creatorName", "serviceId", "serviceName", price,
+      date, time, "clientId", "clientName", "clientPhone", "clientEmail", notes,
+      status, "paymentReference", "paymentStatus", "commissionPercent",
+      "commission", "creatorPayout", "updatedAt"
+    ) VALUES (
+      $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'confirmed',
+      $14,'paid',$15,$16,$17,CURRENT_TIMESTAMP
+    )
+    ON CONFLICT ("paymentReference") DO NOTHING
+    RETURNING *`,
+    [
+      id,
+      input.creatorId,
+      input.creatorName,
+      input.serviceId,
+      input.serviceName,
+      input.price,
+      input.date,
+      input.time,
+      input.clientId,
+      input.clientName,
+      input.clientPhone,
+      input.clientEmail,
+      input.notes,
+      input.paymentReference,
+      input.commissionPercent,
+      input.commission,
+      input.creatorPayout,
+    ]
+  );
+
+  if (row) return mapBooking(row);
+  const replay = await findBookingByPaymentReference(input.paymentReference);
+  if (!replay) throw new Error("Failed to create booking");
+  return replay;
 }
 
 export async function createBooking(input: {
@@ -471,6 +637,62 @@ export async function updateBookingStatus(
 
 export async function deleteBooking(id: string) {
   await query(`DELETE FROM "Booking" WHERE id = $1`, [id]);
+}
+
+/**
+ * Records (or replaces) a client's rating for one booking, then recomputes the
+ * creator's average from every review they have, so the two never drift apart.
+ */
+export async function upsertReview(input: {
+  bookingId: string;
+  creatorId: string;
+  clientId: string;
+  rating: number;
+  comment: string;
+}) {
+  return withTransaction(async (client) => {
+    const result = await client.query<ReviewRow>(
+      `INSERT INTO "Review" (id, "bookingId", "creatorId", "clientId", rating, comment)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT ("bookingId") DO UPDATE
+         SET rating = EXCLUDED.rating,
+             comment = EXCLUDED.comment,
+             "updatedAt" = CURRENT_TIMESTAMP
+       RETURNING *`,
+      [
+        createId("rev"),
+        input.bookingId,
+        input.creatorId,
+        input.clientId,
+        input.rating,
+        input.comment,
+      ]
+    );
+
+    await client.query(
+      `UPDATE "Creator" c
+          SET rating = COALESCE(agg.avg, 0),
+              "reviewCount" = COALESCE(agg.count, 0),
+              "updatedAt" = CURRENT_TIMESTAMP
+         FROM (
+           SELECT ROUND(AVG(rating)::numeric, 1) AS avg, COUNT(*) AS count
+             FROM "Review"
+            WHERE "creatorId" = $1
+         ) agg
+        WHERE c.id = $1`,
+      [input.creatorId]
+    );
+
+    return mapReview(result.rows[0]);
+  });
+}
+
+export async function listCreatorReviews(creatorId: string) {
+  const rows = await queryAll<ReviewRow>(
+    `SELECT * FROM "Review" WHERE "creatorId" = $1 ORDER BY "createdAt" DESC`,
+    [creatorId]
+  );
+  return rows.map(mapReview);
 }
 
 export async function listConversations() {

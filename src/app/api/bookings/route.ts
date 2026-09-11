@@ -1,23 +1,51 @@
-import { jsonError, requireAdmin } from "@/lib/auth-server";
+import {
+  jsonError,
+  requireAdmin,
+  requireClient,
+  requireCreator,
+} from "@/lib/auth-server";
 import {
   createBooking,
   deleteBooking,
   findCreatorRowById,
   listBookings,
+  listClientBookings,
   updateBookingStatus,
 } from "@/lib/repository";
 import { bookingSchema } from "@/lib/validators";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 
+/**
+ * Bookings are scoped to whoever is asking: admins see everything, creators
+ * see bookings for their own services, and clients see what they booked.
+ */
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const creatorId = searchParams.get("creatorId");
-  const bookings = await listBookings(creatorId);
-  return Response.json({ bookings });
+  const admin = await requireAdmin(req);
+  if (admin) {
+    const creatorId = new URL(req.url).searchParams.get("creatorId");
+    return Response.json({ bookings: await listBookings(creatorId) });
+  }
+
+  const creator = await requireCreator(req);
+  if (creator) {
+    return Response.json({ bookings: await listBookings(creator.creatorId) });
+  }
+
+  const client = await requireClient(req);
+  if (client) {
+    return Response.json({ bookings: await listClientBookings(client.clientId) });
+  }
+
+  return jsonError("Sign in to view bookings", 401);
 }
 
 export async function POST(req: NextRequest) {
+  const admin = await requireAdmin(req);
+  if (!admin) {
+    return jsonError("Bookings are created after Paystack payment", 401);
+  }
+
   const body = await req.json().catch(() => null);
   const parsed = bookingSchema.safeParse(body);
   if (!parsed.success) {
