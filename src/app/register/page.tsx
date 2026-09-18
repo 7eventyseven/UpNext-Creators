@@ -10,12 +10,8 @@ import { SelectDropdown } from "@/components/SelectDropdown";
 import { nigeriaStates } from "@/lib/nigeria-states";
 import { registerCreator, getLoggedInCreator } from "@/lib/creator-auth";
 import { setAppRole } from "@/lib/client-auth";
-import {
-  processImageUpload,
-  processVideoUpload,
-  uploadLimits,
-} from "@/lib/file-upload";
-import { ImageUpload, VideoUploadList, VideoEntry } from "@/components/MediaUpload";
+import { processImageUpload, uploadLimits } from "@/lib/file-upload";
+import { ImageUpload } from "@/components/MediaUpload";
 import {
   ServiceList,
   ServiceEntry,
@@ -51,7 +47,6 @@ export default function RegisterPage() {
   const [bio, setBio] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [avatar, setAvatar] = useState<string | null>(null);
-  const [videos, setVideos] = useState<VideoEntry[]>([]);
   const [services, setServices] = useState<ServiceEntry[]>([emptyService()]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -98,12 +93,6 @@ export default function RegisterPage() {
       return;
     }
 
-    const completedVideos = videos.filter((v) => v.url && v.title.trim());
-    if (completedVideos.length === 0) {
-      setError("Please upload at least one video with a title.");
-      return;
-    }
-
     const parsedServices = parseServiceEntries(services);
     if (parsedServices.length === 0) {
       setError("Please add at least one service with a name, price, and duration.");
@@ -123,14 +112,7 @@ export default function RegisterPage() {
         whatsapp: whatsapp.trim(),
         avatar,
         services: parsedServices,
-        videos: completedVideos
-          .sort((a, b) => Number(b.earnings) - Number(a.earnings))
-          .map((v) => ({
-            id: v.id,
-            title: v.title.trim(),
-            url: v.url!,
-            earnings: Number(v.earnings) || 0,
-          })),
+        videos: [],
       });
       setAppRole("creator");
       router.push(nextPath);
@@ -144,7 +126,7 @@ export default function RegisterPage() {
     <AuthLayout
       badge="Join UpNext Creators"
       title="Start your creator journey"
-      subtitle="Register in minutes — choose your category, upload your photo, and showcase your highest grossing videos to clients across Nigeria."
+      subtitle="Register in minutes — choose your category, upload your photo, and list your services for clients across Nigeria."
     >
       <div className="mb-8 lg:hidden">
         <div className="inline-flex items-center gap-2 rounded-full bg-olive-100 px-4 py-1.5 text-sm font-medium text-olive-700 mb-4">
@@ -307,19 +289,6 @@ export default function RegisterPage() {
           description="What you offer and how much you charge"
         >
           <ServiceList services={services} onChange={setServices} />
-        </AuthSection>
-
-        <AuthSection
-          title="Showcase"
-          description="Upload your highest grossing videos to stand out"
-        >
-          <VideoUploadList
-            videos={videos}
-            onChange={setVideos}
-            onError={setError}
-            maxVideos={uploadLimits.maxVideos}
-            processFile={processVideoUpload}
-          />
         </AuthSection>
 
         {error && (

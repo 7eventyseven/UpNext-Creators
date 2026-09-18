@@ -11,8 +11,8 @@ type DriftStyle = CSSProperties & {
 
 const HERO_IMAGES = [
   {
-    src: "https://images.unsplash.com/photo-1502982720700-bfff97f2ecac?auto=format&fit=crop&w=800&q=80",
-    alt: "Photographer at work",
+    src: "/images/photography.png",
+    alt: "Photographer framing a shot at dusk",
     position: "left-0 top-[8%] z-[1] h-[84%] w-[36%]",
     frame: "rounded-[1.6rem] shadow-[0_24px_50px_rgba(47,58,28,0.18)]",
     tilt: -8,
@@ -21,8 +21,8 @@ const HERO_IMAGES = [
     drift: { "--drift-x": "10px", "--drift-y": "-18px", "--sway": "1.8deg" },
   },
   {
-    src: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=800&q=80",
-    alt: "Portrait of a creative",
+    src: "/images/beauty-portrait.png",
+    alt: "Beauty portrait of a model",
     position: "left-[30%] top-0 z-[2] h-[90%] w-[38%]",
     frame: "rounded-[1.6rem] shadow-[0_28px_55px_rgba(47,58,28,0.2)]",
     tilt: 0,
@@ -31,8 +31,8 @@ const HERO_IMAGES = [
     drift: { "--drift-x": "-8px", "--drift-y": "-14px", "--sway": "-1.4deg" },
   },
   {
-    src: "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?auto=format&fit=crop&w=800&q=80",
-    alt: "Live music performance",
+    src: "/images/makeup-palette.png",
+    alt: "Makeup artist loading a brush from a palette",
     position: "right-[8%] top-[2%] z-[1] h-[70%] w-[30%]",
     frame: "rounded-[1.5rem] shadow-[0_24px_50px_rgba(47,58,28,0.16)]",
     tilt: 8,
@@ -41,8 +41,8 @@ const HERO_IMAGES = [
     drift: { "--drift-x": "12px", "--drift-y": "-20px", "--sway": "2.2deg" },
   },
   {
-    src: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=800&q=80",
-    alt: "Designer working on a laptop",
+    src: "/images/silhouette.png",
+    alt: "Silhouette of a makeup artist at work",
     position: "bottom-[2%] right-[-2%] z-[3] h-[36%] w-[26%]",
     frame: "rounded-[1.15rem] shadow-[0_18px_40px_rgba(47,58,28,0.16)]",
     tilt: 7,

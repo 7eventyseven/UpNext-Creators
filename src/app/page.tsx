@@ -24,48 +24,52 @@ const features = [
   { icon: ShieldCheck, label: "Safe & reliable" },
 ];
 
+// The tiles are landscape but the photos are portrait, so `focus` keeps the
+// subject in frame instead of letting a centre crop cut it off.
 const categories = [
   {
     name: "Photography",
     blurb: "Capture your story",
-    image:
-      "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=600&q=80",
+    image: "/images/photography.png",
+    focus: "center 45%",
   },
   {
     name: "Videography",
     blurb: "Bring ideas to life",
-    image:
-      "https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?auto=format&fit=crop&w=600&q=80",
+    image: "/images/videography.png",
+    focus: "center 35%",
   },
   {
     name: "Design",
     blurb: "Make it look amazing",
-    image:
-      "https://images.unsplash.com/photo-1561070791-2526d30994b5?auto=format&fit=crop&w=600&q=80",
+    image: "/images/graphic-design.png",
+    focus: "center 45%",
   },
   {
     name: "Music",
     blurb: "Turn sound into impact",
     image:
       "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=600&q=80",
+    focus: "center",
   },
   {
     name: "Content Creation",
     blurb: "For every platform",
-    image:
-      "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&q=80",
+    image: "/images/beauty-portrait.png",
+    focus: "center 25%",
   },
   {
     name: "Styling",
     blurb: "Look your best",
-    image:
-      "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=600&q=80",
+    image: "/images/makeup-station.png",
+    focus: "center 40%",
   },
   {
     name: "Event Coverage",
     blurb: "Moments that matter",
     image:
       "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=600&q=80",
+    focus: "center",
   },
 ];
 
@@ -218,6 +222,7 @@ export default function HomePage() {
                   alt={category.name}
                   fill
                   sizes="(max-width: 1024px) 45vw, 160px"
+                  style={{ objectPosition: category.focus }}
                   className="object-cover transition-transform duration-700 group-hover:scale-110"
                 />
               </div>
