@@ -54,56 +54,64 @@ export async function POST(req: NextRequest) {
   const action = body?.action as string | undefined;
 
   if (action === "register") {
-    const parsed = registerSchema.safeParse(body);
-    if (!parsed.success) {
-      return jsonError(parsed.error.issues[0]?.message ?? "Invalid input");
+    try {
+      const parsed = registerSchema.safeParse(body);
+      if (!parsed.success) {
+        return jsonError(parsed.error.issues[0]?.message ?? "Invalid input");
+      }
+
+      const input = parsed.data;
+      const email = input.email.toLowerCase();
+      const username = input.username.replace(/^@/, "").toLowerCase();
+
+      if (await findCreatorByEmail(email)) {
+        return jsonError("An account with this email already exists.");
+      }
+      if (await findCreatorByUsername(username)) {
+        return jsonError("This username is already taken.");
+      }
+
+      await findCategoryByName(input.category);
+      const maxRank = await getMaxCreatorRank();
+
+      const creator = await createCreator({
+        name: input.name,
+        username,
+        email,
+        passwordHash: await hashPassword(input.password),
+        avatar: input.avatar,
+        coverImage:
+          "https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=800&q=80",
+        category: input.category,
+        city: input.city,
+        location: `${input.city}, Nigeria`,
+        bio: input.bio,
+        rank: maxRank + 1,
+        whatsapp: input.whatsapp.replace(/\D/g, ""),
+        tags: [input.category],
+        services: input.services,
+        videos: input.videos.map((v) => ({
+          title: v.title,
+          url: v.url,
+          earnings: v.earnings ?? 0,
+        })),
+      });
+
+      const token = await signToken({
+        role: "creator",
+        creatorId: creator.id,
+        email,
+      });
+      await setAuthCookie(CREATOR_COOKIE, token);
+
+      return Response.json({ creator }, { status: 201 });
+    } catch (err) {
+      console.error("Creator registration failed:", err);
+      return jsonError(
+        "We couldn't create your account. Please try again in a moment.",
+        500
+      );
     }
-
-    const input = parsed.data;
-    const email = input.email.toLowerCase();
-    const username = input.username.replace(/^@/, "").toLowerCase();
-
-    if (await findCreatorByEmail(email)) {
-      return jsonError("An account with this email already exists.");
-    }
-    if (await findCreatorByUsername(username)) {
-      return jsonError("This username is already taken.");
-    }
-
-    await findCategoryByName(input.category);
-    const maxRank = await getMaxCreatorRank();
-
-    const creator = await createCreator({
-      name: input.name,
-      username,
-      email,
-      passwordHash: await hashPassword(input.password),
-      avatar: input.avatar,
-      coverImage:
-        "https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=800&q=80",
-      category: input.category,
-      city: input.city,
-      location: `${input.city}, Nigeria`,
-      bio: input.bio,
-      rank: maxRank + 1,
-      whatsapp: input.whatsapp.replace(/\D/g, ""),
-      tags: [input.category],
-      services: input.services,
-      videos: input.videos.map((v) => ({
-        title: v.title,
-        url: v.url,
-        earnings: v.earnings ?? 0,
-      })),
-    });
-
-    const token = await signToken({
-      role: "creator",
-      creatorId: creator.id,
-      email,
-    });
-    await setAuthCookie(CREATOR_COOKIE, token);
-
-    return Response.json({ creator }, { status: 201 });
   }
 
   const parsed = loginSchema.safeParse(body);

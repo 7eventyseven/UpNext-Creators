@@ -175,17 +175,6 @@ export function VideoUploadList({
         )}
       </div>
 
-      {videos.length === 0 && (
-        <button
-          type="button"
-          onClick={addVideo}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-olive-300 py-8 text-sm font-medium text-olive-600 hover:border-olive-500 hover:bg-olive-50"
-        >
-          <Upload size={18} />
-          Upload your highest grossing videos
-        </button>
-      )}
-
       {videos.map((video, i) => (
         <div
           key={video.id}

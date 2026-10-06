@@ -6,8 +6,11 @@ const globalForDb = globalThis as unknown as {
 
 function createPool() {
   const connectionString = process.env.DATABASE_URL;
-  if (!connectionString) {
-    throw new Error("DATABASE_URL is not set");
+  // pg treats values like file:./dev.db as a host lookup and 500s every route.
+  if (!connectionString?.includes("://") || connectionString.startsWith("file:")) {
+    throw new Error(
+      'DATABASE_URL must be a Postgres URL, e.g. postgresql://user:pass@host/db?sslmode=require'
+    );
   }
   return new Pool({ connectionString });
 }

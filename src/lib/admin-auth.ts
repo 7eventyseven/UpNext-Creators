@@ -12,13 +12,8 @@ export async function isAdminLoggedIn(): Promise<boolean> {
 export async function adminLogin(
   password: string,
   email = "nungseplangnan@gmail.com"
-): Promise<boolean> {
-  try {
-    await apiSend("/api/auth/admin", "POST", { password, email });
-    return true;
-  } catch {
-    return false;
-  }
+): Promise<void> {
+  await apiSend("/api/auth/admin", "POST", { password, email });
 }
 
 export async function adminLogout() {

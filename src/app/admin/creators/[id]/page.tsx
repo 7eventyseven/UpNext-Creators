@@ -7,12 +7,8 @@ import { ArrowLeft, Loader2, Plus, Trash2 } from "lucide-react";
 import { getCreatorById, saveCreator } from "@/data/creators";
 import { getCategories } from "@/lib/categories";
 import { StateDropdown } from "@/components/StateDropdown";
-import { ImageUpload, VideoUploadList, VideoEntry } from "@/components/MediaUpload";
-import {
-  processImageUpload,
-  processVideoUpload,
-  uploadLimits,
-} from "@/lib/file-upload";
+import { ImageUpload } from "@/components/MediaUpload";
+import { processImageUpload, uploadLimits } from "@/lib/file-upload";
 import { Creator, Service } from "@/types";
 
 const emptyService = (): Service => ({
@@ -75,7 +71,6 @@ export default function CreatorEditPage({
   const [form, setForm] = useState<Creator>(emptyCreator());
   const [tagInput, setTagInput] = useState("");
   const [categories, setCategories] = useState<string[]>([]);
-  const [videos, setVideos] = useState<VideoEntry[]>([]);
   const [uploadError, setUploadError] = useState("");
   const [saving, setSaving] = useState(false);
   const isNew = id === "new";
@@ -88,14 +83,6 @@ export default function CreatorEditPage({
         const existing = await getCreatorById(paramId);
         if (existing) {
           setForm(existing);
-          setVideos(
-            (existing.videos ?? []).map((v) => ({
-              id: v.id,
-              title: v.title,
-              earnings: String(v.earnings),
-              url: v.url,
-            }))
-          );
         }
       }
     });
@@ -145,22 +132,12 @@ export default function CreatorEditPage({
     }
 
     const tier = form.subscriptionTier;
-    const completedVideos = videos
-      .filter((v) => v.url && v.title.trim())
-      .map((v) => ({
-        id: v.id,
-        title: v.title.trim(),
-        url: v.url!,
-        earnings: Number(v.earnings) || 0,
-      }));
-
     setSaving(true);
     try {
       await saveCreator({
         ...form,
         isSubscribed: tier === "pro" || tier === "premium",
         location: form.location || `${form.city}, Nigeria`,
-        videos: completedVideos,
       });
       router.push("/admin/creators");
     } catch (err) {
@@ -273,13 +250,6 @@ export default function CreatorEditPage({
               hint={`Wide image works best — max ${uploadLimits.maxImageMB} MB`}
             />
           </div>
-          <VideoUploadList
-            videos={videos}
-            onChange={setVideos}
-            onError={setUploadError}
-            maxVideos={uploadLimits.maxVideos}
-            processFile={processVideoUpload}
-          />
           {uploadError && (
             <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
               {uploadError}

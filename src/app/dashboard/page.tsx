@@ -9,7 +9,6 @@ import {
   Loader2,
   LogOut,
   Save,
-  TrendingUp,
   User,
 } from "lucide-react";
 import {
@@ -21,13 +20,8 @@ import { clearAppRole } from "@/lib/client-auth";
 import { getCategories } from "@/lib/categories";
 import { StateDropdown } from "@/components/StateDropdown";
 import { nigeriaStates } from "@/lib/nigeria-states";
-import { formatPrice } from "@/data/creators";
-import {
-  processImageUpload,
-  processVideoUpload,
-  uploadLimits,
-} from "@/lib/file-upload";
-import { ImageUpload, VideoUploadList, VideoEntry } from "@/components/MediaUpload";
+import { processImageUpload } from "@/lib/file-upload";
+import { ImageUpload } from "@/components/MediaUpload";
 import {
   ServiceList,
   ServiceEntry,
@@ -50,7 +44,6 @@ export default function DashboardPage() {
   const [category, setCategory] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [avatar, setAvatar] = useState<string | null>(null);
-  const [videos, setVideos] = useState<VideoEntry[]>([]);
   const [services, setServices] = useState<ServiceEntry[]>([emptyService()]);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -70,14 +63,6 @@ export default function DashboardPage() {
       setCategory(loggedIn.category);
       setWhatsapp(loggedIn.whatsapp);
       setAvatar(loggedIn.avatar);
-      setVideos(
-        (loggedIn.videos ?? []).map((v) => ({
-          id: v.id,
-          title: v.title,
-          earnings: String(v.earnings),
-          url: v.url,
-        }))
-      );
       setServices(
         loggedIn.services.length > 0
           ? loggedIn.services.map(serviceToEntry)
@@ -93,16 +78,6 @@ export default function DashboardPage() {
     setSaving(true);
     setError("");
     setMessage("");
-
-    const completedVideos = videos
-      .filter((v) => v.url && v.title.trim())
-      .sort((a, b) => Number(b.earnings) - Number(a.earnings))
-      .map((v) => ({
-        id: v.id,
-        title: v.title.trim(),
-        url: v.url!,
-        earnings: Number(v.earnings) || 0,
-      }));
 
     const parsedServices = parseServiceEntries(services);
     if (parsedServices.length === 0) {
@@ -120,7 +95,6 @@ export default function DashboardPage() {
         category,
         whatsapp: whatsapp.replace(/\D/g, ""),
         avatar: avatar ?? creator.avatar,
-        videos: completedVideos,
         services: parsedServices,
       });
       setMessage("Profile updated successfully.");
@@ -140,18 +114,13 @@ export default function DashboardPage() {
 
   if (!creator) return null;
 
-  const totalEarnings = (creator.videos ?? []).reduce(
-    (sum, v) => sum + v.earnings,
-    0
-  );
-
   return (
     <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-8">
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-olive-900">Creator Dashboard</h1>
           <p className="text-olive-600">
-            Manage your profile, services, and showcase
+            Manage your profile and services
           </p>
         </div>
         <div className="flex gap-2">
@@ -180,22 +149,13 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-3">
+      <div className="mb-6 grid gap-4 sm:grid-cols-2">
         <div className="rounded-xl border border-olive-200/70 bg-milky-50 p-4">
           <div className="flex items-center gap-2 text-olive-600 text-sm">
             <User size={16} />
             Rank
           </div>
           <p className="mt-1 text-2xl font-bold text-olive-900">#{creator.rank}</p>
-        </div>
-        <div className="rounded-xl border border-olive-200/70 bg-milky-50 p-4">
-          <div className="flex items-center gap-2 text-olive-600 text-sm">
-            <TrendingUp size={16} />
-            Video Earnings
-          </div>
-          <p className="mt-1 text-2xl font-bold text-olive-900">
-            {formatPrice(totalEarnings)}
-          </p>
         </div>
         <div className="rounded-xl border border-olive-200/70 bg-milky-50 p-4">
           <p className="text-olive-600 text-sm">Tier</p>
@@ -281,19 +241,6 @@ export default function DashboardPage() {
           description="Update what you offer and your rates"
         >
           <ServiceList services={services} onChange={setServices} />
-        </AuthSection>
-
-        <AuthSection
-          title="Showcase Videos"
-          description="Your highest grossing work"
-        >
-          <VideoUploadList
-            videos={videos}
-            onChange={setVideos}
-            onError={setError}
-            maxVideos={uploadLimits.maxVideos}
-            processFile={processVideoUpload}
-          />
         </AuthSection>
 
         {message && (

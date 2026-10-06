@@ -19,11 +19,13 @@ export default function AdminLoginPage() {
     setLoading(true);
     setError("");
 
-    const ok = await adminLogin(password, email.trim());
-    if (ok) {
+    try {
+      await adminLogin(password, email.trim());
       router.replace("/admin");
-    } else {
-      setError("Incorrect email or password. Try again.");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Incorrect email or password. Try again."
+      );
       setLoading(false);
     }
   };
