@@ -18,7 +18,15 @@ type RequestSummary = {
   price: number;
   creatorPayout: number;
   status: "pending" | "confirmed" | "completed" | "cancelled";
+  expired: boolean;
+  secondsLeft: number;
 };
+
+function formatClock(totalSeconds: number) {
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
 
 type Outcome = "accept" | "decline" | null;
 
@@ -30,18 +38,33 @@ function RespondInner() {
   const [busy, setBusy] = useState<Outcome>(null);
   const [done, setDone] = useState<Outcome>(null);
   const [refundFailed, setRefundFailed] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(0);
 
   useEffect(() => {
     if (!token) return;
     apiGet<{ booking: RequestSummary }>(
       `/api/bookings/respond?token=${encodeURIComponent(token)}`
     )
-      .then((data) => setBooking(data.booking))
+      .then((data) => {
+        setBooking(data.booking);
+        setSecondsLeft(data.booking.secondsLeft);
+      })
       .catch((err) =>
         setError(err instanceof Error ? err.message : "Could not load booking.")
       )
       .finally(() => setLoading(false));
   }, [token]);
+
+  // Tick down locally; the server is still the one that enforces the deadline.
+  const isPending = booking?.status === "pending";
+  useEffect(() => {
+    if (!isPending || done) return;
+    const timer = setInterval(
+      () => setSecondsLeft((s) => Math.max(0, s - 1)),
+      1000
+    );
+    return () => clearInterval(timer);
+  }, [isPending, done]);
 
   const respond = async (action: "accept" | "decline") => {
     setBusy(action);
@@ -125,6 +148,7 @@ function RespondInner() {
   }
 
   const answered = booking.status !== "pending";
+  const timedOut = !answered && secondsLeft <= 0;
   const rows: [string, string][] = [
     ["Service", booking.serviceName],
     ["Client", booking.clientName],
@@ -151,19 +175,26 @@ function RespondInner() {
         ))}
       </dl>
 
-      {answered ? (
+      {answered || timedOut ? (
         <p className="mt-6 rounded-xl bg-olive-50 px-4 py-3 text-sm text-olive-700">
-          This booking has already been{" "}
-          {booking.status === "cancelled" ? "declined" : "accepted"}.
+          {booking.expired || timedOut
+            ? "The 30-minute response window has passed. This booking was cancelled and the client has been refunded."
+            : `This booking has already been ${booking.status === "cancelled" ? "declined" : "accepted"}.`}
         </p>
       ) : (
         <>
+          <p
+            className={`mt-6 rounded-xl px-4 py-3 text-center text-sm font-semibold ${secondsLeft <= 300 ? "bg-red-50 text-red-600" : "bg-amber-50 text-amber-700"}`}
+          >
+            Respond within {formatClock(secondsLeft)} or the booking is
+            cancelled and refunded
+          </p>
           {error && (
             <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">
               {error}
             </p>
           )}
-          <div className="mt-6 grid grid-cols-2 gap-3">
+          <div className="mt-4 grid grid-cols-2 gap-3">
             <button
               type="button"
               disabled={busy !== null}

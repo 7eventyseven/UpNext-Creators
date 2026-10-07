@@ -178,6 +178,20 @@ export default function DashboardPage() {
           <p className="mt-1 text-2xl font-bold text-olive-900 capitalize">
             {creator.subscriptionTier}
           </p>
+          {creator.subscriptionTier !== "free" && creator.subscriptionEndsAt && (
+            <p className="mt-1 text-xs text-olive-500">
+              Active until{" "}
+              {new Date(creator.subscriptionEndsAt).toLocaleDateString("en-NG", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })}{" "}
+              ·{" "}
+              <Link href="/subscribe" className="font-semibold text-olive-700 hover:underline">
+                Renew
+              </Link>
+            </p>
+          )}
         </div>
       </div>
 

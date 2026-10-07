@@ -8,8 +8,8 @@ import {
   createPaidBooking,
   findCreatorById,
   getAppSettingsRow,
-  setCreatorSubscription,
 } from "@/lib/repository";
+import { activateSubscription } from "@/lib/expiry-repo";
 import { notifyBookingCreated } from "@/lib/booking-response";
 import type { Booking } from "@/types";
 
@@ -351,7 +351,8 @@ async function fulfillSubscription(
   const creator = await findCreatorById(creatorId);
   if (!creator) throw new Error("Creator not found for this payment");
 
-  await setCreatorSubscription(creatorId, tier);
+  // Idempotent per payment reference: the redirect and the webhook both land here.
+  await activateSubscription({ creatorId, tier, reference: tx.reference });
   return { ok: true, kind: "subscription", tier, creatorId };
 }
 

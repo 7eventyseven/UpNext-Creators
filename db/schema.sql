@@ -67,6 +67,18 @@ CREATE TABLE IF NOT EXISTS "Creator" (
   "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Paid plans last 30 days. NULL = no expiry (admin-granted / pre-existing).
+ALTER TABLE "Creator" ADD COLUMN IF NOT EXISTS "subscriptionEndsAt" TIMESTAMPTZ(3);
+
+-- One row per Paystack subscription payment, so a payment confirmed by both
+-- the redirect and the webhook only extends the plan once.
+CREATE TABLE IF NOT EXISTS "SubscriptionPayment" (
+  "reference" TEXT PRIMARY KEY,
+  "creatorId" TEXT NOT NULL REFERENCES "Creator"("id") ON DELETE CASCADE,
+  "tier" TEXT NOT NULL,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE INDEX IF NOT EXISTS "Creator_categoryName_idx" ON "Creator"("categoryName");
 CREATE INDEX IF NOT EXISTS "Creator_city_idx" ON "Creator"("city");
 CREATE INDEX IF NOT EXISTS "Creator_rank_idx" ON "Creator"("rank");
@@ -130,6 +142,8 @@ ALTER TABLE "Booking" ADD COLUMN IF NOT EXISTS "creatorPayout" INTEGER NOT NULL 
 ALTER TABLE "Booking" ADD COLUMN IF NOT EXISTS "creatorNotifiedAt" TIMESTAMP(3);
 ALTER TABLE "Booking" ADD COLUMN IF NOT EXISTS "respondedAt" TIMESTAMP(3);
 ALTER TABLE "Booking" ADD COLUMN IF NOT EXISTS "refundStatus" TEXT NOT NULL DEFAULT 'none';
+-- Set when a booking was cancelled because the creator didn't answer in time.
+ALTER TABLE "Booking" ADD COLUMN IF NOT EXISTS "expiredAt" TIMESTAMPTZ(3);
 
 CREATE INDEX IF NOT EXISTS "Booking_creatorId_idx" ON "Booking"("creatorId");
 CREATE INDEX IF NOT EXISTS "Booking_status_idx" ON "Booking"("status");

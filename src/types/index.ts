@@ -30,6 +30,8 @@ export interface Creator {
   rank: number;
   isSubscribed: boolean;
   subscriptionTier: "free" | "pro" | "premium";
+  /** When the paid plan runs out. Absent for free or admin-granted plans. */
+  subscriptionEndsAt?: string;
   whatsapp: string;
   services: Service[];
   tags: string[];
@@ -73,6 +75,10 @@ export interface Booking {
   creatorPayout?: number;
   /** Set when a decline triggered a Paystack refund ("failed" needs admin attention). */
   refundStatus?: "none" | "requested" | "failed";
+  /** True when the creator didn't answer in time and the client was refunded. */
+  expired?: boolean;
+  /** While pending: seconds left for the creator to accept or decline. */
+  secondsLeft?: number;
 }
 
 export type WithdrawalStatus =

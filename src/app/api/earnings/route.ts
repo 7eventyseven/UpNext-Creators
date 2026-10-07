@@ -4,11 +4,14 @@ import {
   getPayoutAccount,
   listWithdrawals,
 } from "@/lib/payouts-repo";
+import { sweepExpired } from "@/lib/booking-actions";
 import { NextRequest } from "next/server";
 
 export async function GET(req: NextRequest) {
   const session = await requireCreator(req);
   if (!session) return jsonError("Sign in to view your earnings", 401);
+
+  await sweepExpired().catch(() => undefined);
 
   const [summary, payoutAccount, withdrawals] = await Promise.all([
     getEarningsSummary(session.creatorId),

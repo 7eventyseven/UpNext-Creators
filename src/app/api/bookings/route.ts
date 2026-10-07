@@ -12,7 +12,7 @@ import {
   listClientBookings,
   updateBookingStatus,
 } from "@/lib/repository";
-import { respondToBooking } from "@/lib/booking-actions";
+import { respondToBooking, sweepExpired } from "@/lib/booking-actions";
 import { bookingSchema } from "@/lib/validators";
 import { NextRequest } from "next/server";
 import { z } from "zod";
@@ -22,6 +22,9 @@ import { z } from "zod";
  * see bookings for their own services, and clients see what they booked.
  */
 export async function GET(req: NextRequest) {
+  // Safety net: cancel + refund anything unanswered for 30 minutes.
+  await sweepExpired().catch(() => undefined);
+
   const admin = await requireAdmin(req);
   if (admin) {
     const creatorId = new URL(req.url).searchParams.get("creatorId");
@@ -84,9 +87,14 @@ export async function PATCH(req: NextRequest) {
       creatorId: creator.creatorId,
     });
     if (!result.ok) {
-      return result.reason === "not_found"
-        ? jsonError("Booking not found", 404)
-        : jsonError("This booking has already been answered.", 409);
+      if (result.reason === "not_found") return jsonError("Booking not found", 404);
+      if (result.reason === "expired") {
+        return jsonError(
+          "The 30-minute response window has passed. This booking was cancelled and the client refunded.",
+          410
+        );
+      }
+      return jsonError("This booking has already been answered.", 409);
     }
     return Response.json({
       booking: result.booking,

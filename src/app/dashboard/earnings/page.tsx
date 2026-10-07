@@ -39,11 +39,11 @@ const withdrawalStyle: Record<Withdrawal["status"], string> = {
 };
 
 const withdrawalLabel: Record<Withdrawal["status"], string> = {
-  pending: "Processing",
-  processing: "Processing",
-  success: "Paid",
-  failed: "Failed",
-  reversed: "Reversed",
+  pending: "On its way",
+  processing: "On its way",
+  success: "Sent to your bank",
+  failed: "Didn't go through",
+  reversed: "Returned to you",
 };
 
 function formatDateTime(value: string) {
@@ -161,7 +161,7 @@ export default function EarningsPage() {
     e.preventDefault();
     const value = Number(amount);
     if (!Number.isInteger(value) || value <= 0) {
-      setError("Enter a whole-naira amount.");
+      setError("Please enter the amount in naira, for example 5000.");
       return;
     }
     setWithdrawing(true);
@@ -380,13 +380,13 @@ export default function EarningsPage() {
                       onChange={(e) =>
                         setAccountNumber(e.target.value.replace(/\D/g, ""))
                       }
-                      placeholder="10-digit NUBAN"
+                      placeholder="Your 10-digit account number"
                     />
                   </div>
                 </div>
                 <p className="text-xs text-olive-500">
-                  We verify the account with your bank and use the registered
-                  account name.
+                  We check the account with your bank, so make sure the number
+                  is correct. Your name will appear once it is confirmed.
                 </p>
                 <div className="flex gap-3">
                   <button
@@ -413,7 +413,7 @@ export default function EarningsPage() {
 
           <AuthSection
             title="Earnings history"
-            description="UpNext keeps a small commission; the rest is yours."
+            description="UpNext keeps a small fee from each booking. The rest is yours."
           >
             {earned.length === 0 ? (
               <p className="text-sm text-olive-500">
@@ -432,8 +432,8 @@ export default function EarningsPage() {
                       </p>
                       <p className="text-xs text-olive-500">
                         {formatDateTime(b.createdAt)} · Client paid{" "}
-                        {formatPrice(b.price)} − {b.commissionPercent ?? 0}% fee (
-                        {formatPrice(b.commission ?? 0)})
+                        {formatPrice(b.price)}, UpNext fee{" "}
+                        {formatPrice(b.commission ?? 0)} ({b.commissionPercent ?? 0}%)
                       </p>
                     </div>
                     <p className="font-semibold text-olive-800">
@@ -466,7 +466,8 @@ export default function EarningsPage() {
                       {w.failureReason &&
                         (w.status === "failed" || w.status === "reversed") && (
                           <p className="text-xs text-red-500">
-                            {w.failureReason} — returned to your balance.
+                            {w.failureReason.replace(/[.\s]+$/, "")}. Your money
+                            is back in your balance.
                           </p>
                         )}
                     </div>

@@ -23,7 +23,7 @@ import { Booking, ClientProfile, Creator } from "@/types";
 
 const statusConfig = {
   pending: {
-    label: "Awaiting creator",
+    label: "Waiting for creator",
     icon: Hourglass,
     color: "text-amber-600 bg-amber-50 border-amber-200",
   },
@@ -112,6 +112,19 @@ function ClientBookingCard({ booking }: { booking: Booking }) {
         </div>
         <StatusBadge status={booking.status} />
       </div>
+
+      {booking.status === "pending" && (
+        <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+          {booking.creatorName.split(" ")[0]} has 30 minutes from payment to
+          respond. If they don&apos;t, you are refunded automatically.
+        </p>
+      )}
+      {booking.status === "cancelled" && booking.expired && (
+        <p className="mt-3 rounded-lg bg-olive-50 px-3 py-2 text-xs text-olive-700">
+          {booking.creatorName.split(" ")[0]} didn&apos;t respond in time. Your
+          payment is being refunded.
+        </p>
+      )}
 
       <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
         <div className="flex items-center gap-2 text-olive-600">

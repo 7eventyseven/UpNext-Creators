@@ -23,6 +23,7 @@ import {
 } from "@/lib/mappers";
 import type { Creator } from "@/types";
 import { sortCreators } from "@/lib/sort-creators";
+import { secondsLeftSql, sweepExpiredSubscriptions } from "@/lib/expiry-repo";
 
 export interface CreatorWriteInput {
   id?: string;
@@ -154,6 +155,7 @@ export async function countCreatorsByCategory(name: string) {
 }
 
 export async function listCreators(): Promise<Creator[]> {
+  await sweepExpiredSubscriptions().catch(() => undefined);
   const rows = await queryAll<CreatorRow>(`SELECT * FROM "Creator"`);
   const { servicesByCreator, videosByCreator } = await loadCreatorExtras(
     rows.map((r) => r.id)
@@ -166,6 +168,7 @@ export async function listCreators(): Promise<Creator[]> {
 }
 
 export async function findCreatorById(id: string): Promise<Creator | null> {
+  await sweepExpiredSubscriptions().catch(() => undefined);
   const row = await queryOne<CreatorRow>(`SELECT * FROM "Creator" WHERE id = $1`, [id]);
   if (!row) return null;
   const { servicesByCreator, videosByCreator } = await loadCreatorExtras([id]);
@@ -364,6 +367,11 @@ export async function updateCreator(
       `"reviewCount" = $13`,
       `"completedBookings" = $14`,
       `rank = $15`,
+      // Unchanged plan keeps its paid end date; an admin changing it is a
+      // manual grant, which has no expiry.
+      `"subscriptionEndsAt" = CASE
+         WHEN $16::boolean = "isSubscribed" AND $17::"SubscriptionTier" = "subscriptionTier"
+         THEN "subscriptionEndsAt" ELSE NULL END`,
       `"isSubscribed" = $16`,
       `"subscriptionTier" = $17`,
       `whatsapp = $18`,
@@ -460,20 +468,6 @@ export async function updateCreatorProfile(
   return creator;
 }
 
-export async function setCreatorSubscription(
-  id: string,
-  tier: "pro" | "premium"
-) {
-  await query(
-    `UPDATE "Creator"
-     SET "isSubscribed" = true,
-         "subscriptionTier" = $2,
-         "updatedAt" = CURRENT_TIMESTAMP
-     WHERE id = $1`,
-    [id, tier]
-  );
-}
-
 export async function deleteCreator(id: string) {
   await query(`DELETE FROM "Creator" WHERE id = $1`, [id]);
 }
@@ -481,11 +475,13 @@ export async function deleteCreator(id: string) {
 export async function listBookings(creatorId?: string | null) {
   const rows = creatorId
     ? await queryAll<BookingRow>(
-        `SELECT * FROM "Booking" WHERE "creatorId" = $1 ORDER BY "createdAt" DESC`,
+        `SELECT *, ${secondsLeftSql()} AS "secondsLeft"
+           FROM "Booking" WHERE "creatorId" = $1 ORDER BY "createdAt" DESC`,
         [creatorId]
       )
     : await queryAll<BookingRow>(
-        `SELECT * FROM "Booking" ORDER BY "createdAt" DESC`
+        `SELECT *, ${secondsLeftSql()} AS "secondsLeft"
+           FROM "Booking" ORDER BY "createdAt" DESC`
       );
   return rows.map(mapBooking);
 }
@@ -496,7 +492,8 @@ export async function listBookings(creatorId?: string | null) {
  */
 export async function listClientBookings(clientId: string) {
   const rows = await queryAll<BookingRow & { reviewRating: number | null; reviewComment: string | null }>(
-    `SELECT b.*, r.rating AS "reviewRating", r.comment AS "reviewComment"
+    `SELECT b.*, r.rating AS "reviewRating", r.comment AS "reviewComment",
+            ${secondsLeftSql("b")} AS "secondsLeft"
        FROM "Booking" b
        LEFT JOIN "Review" r ON r."bookingId" = b.id
       WHERE b."clientId" = $1
@@ -512,7 +509,7 @@ export async function listClientBookings(clientId: string) {
 
 export async function findBookingById(id: string) {
   const row = await queryOne<BookingRow>(
-    `SELECT * FROM "Booking" WHERE id = $1`,
+    `SELECT *, ${secondsLeftSql()} AS "secondsLeft" FROM "Booking" WHERE id = $1`,
     [id]
   );
   return row ? mapBooking(row) : null;

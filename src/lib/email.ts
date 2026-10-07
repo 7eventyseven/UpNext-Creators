@@ -126,13 +126,14 @@ export function creatorBookingRequestEmail(input: {
       `Hi ${info.creatorName}, ${info.clientName} has booked and paid for "${info.serviceName}" ` +
       `on ${info.date} at ${info.time}. You receive ${naira(info.creatorPayout)}.\n\n` +
       `Accept or decline here: ${input.respondUrl}\n\n` +
-      `If you decline, the client is refunded automatically.`,
+      `You have 30 minutes to respond. If you decline, or do not answer in time, ` +
+      `the booking is cancelled and the client is refunded automatically.`,
     html: layout(
       "You have a new booking request",
       `<p style="margin:0 0 4px;">Hi ${escapeHtml(info.creatorName)}, a client has booked and paid. Please accept or decline.</p>
        ${details(info, true)}
        <div>${button(input.respondUrl, "Accept or decline", "#5b6b2f")}</div>
-       <p style="font-size:12px;color:#6b7458;margin-top:20px;">You will choose Accept or Decline on the next page. If you decline, the client is refunded automatically. The link works for 7 days.</p>`
+       <p style="font-size:12px;color:#6b7458;margin-top:20px;"><strong>Please respond within 30 minutes.</strong> If you decline, or do not answer in time, the booking is cancelled and the client is refunded automatically.</p>`
     ),
   };
 }
@@ -140,23 +141,33 @@ export function creatorBookingRequestEmail(input: {
 export function clientBookingOutcomeEmail(input: {
   to: string;
   info: BookingEmailInfo;
-  outcome: "accepted" | "declined";
+  outcome: "accepted" | "declined" | "expired";
 }): Mail {
   const { info } = input;
   const accepted = input.outcome === "accepted";
+  const expired = input.outcome === "expired";
+  const why = expired
+    ? `${info.creatorName} did not respond within 30 minutes`
+    : `${info.creatorName} is unable to take this booking`;
   return {
     to: input.to,
     subject: accepted
       ? `${info.creatorName} accepted your booking`
-      : `${info.creatorName} could not take your booking`,
+      : expired
+        ? `Your booking with ${info.creatorName} was refunded`
+        : `${info.creatorName} could not take your booking`,
     text: accepted
       ? `Good news ${info.clientName}! ${info.creatorName} accepted your booking for "${info.serviceName}" on ${info.date} at ${info.time}.`
-      : `Hi ${info.clientName}, unfortunately ${info.creatorName} is unable to take your booking for "${info.serviceName}". Your payment of ${naira(info.price)} is being refunded to your original payment method.`,
+      : `Hi ${info.clientName}, unfortunately ${why}, so your booking for "${info.serviceName}" was cancelled. Your payment of ${naira(info.price)} is being refunded to your original payment method.`,
     html: layout(
-      accepted ? "Your booking is confirmed" : "Your booking was declined",
+      accepted
+        ? "Your booking is confirmed"
+        : expired
+          ? "Your booking expired and was refunded"
+          : "Your booking was declined",
       accepted
         ? `<p style="margin:0;">Good news ${escapeHtml(info.clientName)}! ${escapeHtml(info.creatorName)} accepted your booking.</p>${details(info, false)}`
-        : `<p style="margin:0;">Hi ${escapeHtml(info.clientName)}, unfortunately ${escapeHtml(info.creatorName)} is unable to take this booking.</p>${details(info, false)}<p style="margin:0;font-weight:600;">Your payment of ${naira(info.price)} is being refunded to your original payment method. Refunds can take a few business days to appear.</p>`
+        : `<p style="margin:0;">Hi ${escapeHtml(info.clientName)}, unfortunately ${escapeHtml(why)}, so this booking was cancelled.</p>${details(info, false)}<p style="margin:0;font-weight:600;">Your payment of ${naira(info.price)} is being refunded to your original payment method. Refunds can take a few business days to appear.</p>`
     ),
   };
 }
@@ -169,10 +180,10 @@ export function clientBookingReceivedEmail(input: {
   return {
     to: input.to,
     subject: `Booking request sent to ${info.creatorName}`,
-    text: `Hi ${info.clientName}, we received your payment of ${naira(info.price)} for "${info.serviceName}". ${info.creatorName} has been notified and will accept or decline shortly. If they decline, you are refunded automatically.`,
+    text: `Hi ${info.clientName}, we received your payment of ${naira(info.price)} for "${info.serviceName}". ${info.creatorName} has been notified and has 30 minutes to accept or decline. If they decline, or do not respond in time, you are refunded automatically.`,
     html: layout(
       "Booking request sent",
-      `<p style="margin:0;">Hi ${escapeHtml(info.clientName)}, we received your payment. ${escapeHtml(info.creatorName)} has been notified and will accept or decline shortly.</p>${details(info, false)}<p style="margin:0;">If they decline, you are refunded automatically.</p>`
+      `<p style="margin:0;">Hi ${escapeHtml(info.clientName)}, we received your payment. ${escapeHtml(info.creatorName)} has been notified and has 30 minutes to accept or decline.</p>${details(info, false)}<p style="margin:0;">If they decline, or do not respond in time, you are refunded automatically.</p>`
     ),
   };
 }

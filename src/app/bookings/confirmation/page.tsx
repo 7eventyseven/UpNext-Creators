@@ -66,7 +66,7 @@ function BookingConfirmationInner() {
           </h1>
           <p className="mt-3 text-olive-600 leading-relaxed">
             {booking.status === "pending"
-              ? `Your payment of ${formatPrice(booking.price)} was received. ${booking.creatorName} has been notified by email and will accept or decline ${booking.serviceName}. If they decline, you are refunded automatically.`
+              ? `Your payment of ${formatPrice(booking.price)} was received. ${booking.creatorName} has been notified by email and has 30 minutes to accept or decline ${booking.serviceName}. If they decline, or don't respond in time, you are refunded automatically.`
               : booking.status === "cancelled"
                 ? `${booking.creatorName} couldn't take ${booking.serviceName}. Your ${formatPrice(booking.price)} is being refunded.`
                 : `${booking.creatorName} has accepted your booking for ${booking.serviceName}.`}

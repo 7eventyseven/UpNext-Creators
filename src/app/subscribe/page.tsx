@@ -148,8 +148,9 @@ export default function SubscribePage() {
           Welcome to {plan?.name}!
         </h1>
         <p className="mt-3 text-olive-600 leading-relaxed">
-          Payment received. You&apos;re now ranked higher and ready to receive
-          more bookings from clients across Nigeria.
+          Payment received. Your plan is active for the next 30 days —
+          you&apos;re ranked higher and ready to receive more bookings from
+          clients across Nigeria. Renew any time to add another 30 days.
         </p>
         <Link
           href="/dashboard"
@@ -162,6 +163,17 @@ export default function SubscribePage() {
   }
 
   const currentTier = creator?.subscriptionTier ?? "free";
+  const endsAt = creator?.subscriptionEndsAt
+    ? new Date(creator.subscriptionEndsAt)
+    : null;
+  const endsAtLabel =
+    endsAt && !Number.isNaN(endsAt.getTime())
+      ? endsAt.toLocaleDateString("en-NG", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        })
+      : null;
 
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6 py-8">
@@ -174,8 +186,9 @@ export default function SubscribePage() {
           Rank Higher, Get More Bookings
         </h1>
         <p className="mt-3 text-olive-600 max-w-xl mx-auto text-sm sm:text-base">
-          Subscribe monthly to climb the rankings and appear at the top when
-          clients search for creators in your city and category.
+          Each payment gives you 30 days of a higher ranking, so you appear at
+          the top when clients search for creators in your city and category.
+          Renew any time to keep your spot.
         </p>
       </div>
 
@@ -227,7 +240,7 @@ export default function SubscribePage() {
                   <p className="text-3xl font-bold text-olive-900">
                     {formatNaira(plan.price)}
                     <span className="text-sm font-normal text-olive-500">
-                      /month
+                      /30 days
                     </span>
                   </p>
                 )}
@@ -245,10 +258,20 @@ export default function SubscribePage() {
                 ))}
               </ul>
 
+              {isCurrent && plan.id !== "free" && endsAtLabel && (
+                <p className="mb-3 text-center text-xs font-medium text-olive-600">
+                  Active until {endsAtLabel}
+                </p>
+              )}
+
               <button
                 type="button"
                 onClick={() => handleSubscribe(plan.id)}
-                disabled={plan.id === "free" || isCurrent || selected === plan.id}
+                disabled={
+                  plan.id === "free" ||
+                  (isCurrent && !endsAtLabel) ||
+                  selected === plan.id
+                }
                 className={`w-full rounded-xl py-3 font-semibold transition-colors ${
                   plan.highlighted
                     ? "bg-olive-600 text-milky-50 hover:bg-olive-700"
@@ -257,9 +280,13 @@ export default function SubscribePage() {
                       : "border border-olive-300 text-olive-700 hover:bg-olive-50"
                 } disabled:opacity-60`}
               >
-                {isCurrent
-                  ? "Current plan"
-                  : plan.id === "free"
+                {isCurrent && plan.id !== "free" && endsAtLabel
+                  ? selected === plan.id
+                    ? "Enter your card..."
+                    : "Renew (+30 days)"
+                  : isCurrent
+                    ? "Current plan"
+                    : plan.id === "free"
                     ? "Included"
                     : selected === plan.id
                       ? "Enter your card..."
@@ -271,9 +298,15 @@ export default function SubscribePage() {
       </div>
 
       <p className="mt-8 text-center text-sm text-olive-500">
-        Subscriptions are card-only via Paystack — no bank transfer or USSD.
-        Use a <span className="font-medium text-olive-700">test card</span> while
-        keys are in test mode: 4084 0840 8408 4081, any future date, any CVV.
+        You pay with your debit card, safely through Paystack. Your plan lasts
+        30 days from the day you pay.
+        {process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY?.startsWith("pk_test") && (
+          <>
+            {" "}
+            <span className="font-medium text-olive-700">Test mode:</span> use
+            card 4084 0840 8408 4081, any future date and any 3 digits.
+          </>
+        )}
         {!creator && (
           <>
             {" "}

@@ -59,6 +59,7 @@ export interface CreatorRow {
   subscriptionTier: SubscriptionTier;
   whatsapp: string;
   tags: string[];
+  subscriptionEndsAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -103,7 +104,10 @@ export interface BookingRow {
   creatorPayout: number;
   creatorNotifiedAt: Date | null;
   respondedAt: Date | null;
+  expiredAt: Date | null;
   refundStatus: RefundStatus;
+  /** Computed in SQL by list queries: seconds left for the creator to respond. */
+  secondsLeft?: number | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -272,6 +276,9 @@ export function mapCreator(
     rank: c.rank,
     isSubscribed: c.isSubscribed,
     subscriptionTier: c.subscriptionTier,
+    subscriptionEndsAt: c.subscriptionEndsAt
+      ? c.subscriptionEndsAt.toISOString()
+      : undefined,
     whatsapp: c.whatsapp,
     services: services.map(mapService),
     tags: c.tags ?? [],
@@ -303,6 +310,11 @@ export function mapBooking(b: BookingRow): Booking {
     commission: b.commission ?? 0,
     creatorPayout: b.creatorPayout ?? b.price,
     refundStatus: b.refundStatus ?? "none",
+    expired: b.expiredAt ? true : undefined,
+    secondsLeft:
+      b.status === "pending" && typeof b.secondsLeft === "number"
+        ? b.secondsLeft
+        : undefined,
   };
 }
 

@@ -1,4 +1,5 @@
 import { createId, query, queryAll, queryOne, withTransaction } from "@/lib/db";
+import { BOOKING_RESPONSE_MINUTES } from "@/lib/expiry-repo";
 import {
   BookingRow,
   mapBooking,
@@ -42,8 +43,9 @@ export async function releaseCreatorNotification(bookingId: string) {
 
 /**
  * Atomically moves a paid, still-pending booking to its new status. Returns
- * null when it was already answered, so a double click or a re-used email
- * link can never accept and decline the same booking.
+ * null when it was already answered or the 30-minute window has passed, so a
+ * double click, a late click or a re-used email link can never accept or
+ * decline the same booking.
  */
 export async function respondToPendingBooking(
   id: string,
@@ -55,6 +57,7 @@ export async function respondToPendingBooking(
             "respondedAt" = CURRENT_TIMESTAMP,
             "updatedAt" = CURRENT_TIMESTAMP
       WHERE id = $1 AND status = 'pending' AND "paymentStatus" = 'paid'
+        AND "createdAt" > CURRENT_TIMESTAMP - interval '${BOOKING_RESPONSE_MINUTES} minutes'
       RETURNING *`,
     [id, status]
   );

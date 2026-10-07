@@ -1,5 +1,5 @@
 import { jsonError } from "@/lib/auth-server";
-import { respondToBooking } from "@/lib/booking-actions";
+import { respondToBooking, sweepExpired } from "@/lib/booking-actions";
 import { verifyBookingResponseToken } from "@/lib/booking-response";
 import { findBookingById } from "@/lib/repository";
 import { NextRequest } from "next/server";
@@ -17,6 +17,9 @@ export async function GET(req: NextRequest) {
     return jsonError("This link is invalid or has expired.", 401);
   }
 
+  // Settle anything that ran out of time so the page shows the true state.
+  await sweepExpired().catch(() => undefined);
+
   const booking = await findBookingById(bookingId);
   if (!booking) return jsonError("Booking not found", 404);
 
@@ -32,6 +35,8 @@ export async function GET(req: NextRequest) {
       price: booking.price,
       creatorPayout: booking.creatorPayout ?? booking.price,
       status: booking.status,
+      expired: booking.expired === true,
+      secondsLeft: booking.status === "pending" ? (booking.secondsLeft ?? 0) : 0,
     },
   });
 }
@@ -54,9 +59,14 @@ export async function POST(req: NextRequest) {
   });
 
   if (!result.ok) {
-    return result.reason === "not_found"
-      ? jsonError("Booking not found", 404)
-      : jsonError("This booking has already been answered.", 409);
+    if (result.reason === "not_found") return jsonError("Booking not found", 404);
+    if (result.reason === "expired") {
+      return jsonError(
+        "The 30-minute response window has passed. This booking was cancelled and the client refunded.",
+        410
+      );
+    }
+    return jsonError("This booking has already been answered.", 409);
   }
 
   return Response.json({
