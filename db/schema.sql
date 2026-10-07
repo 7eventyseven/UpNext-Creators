@@ -125,6 +125,12 @@ ALTER TABLE "Booking" ADD COLUMN IF NOT EXISTS "commissionPercent" INTEGER NOT N
 ALTER TABLE "Booking" ADD COLUMN IF NOT EXISTS "commission" INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE "Booking" ADD COLUMN IF NOT EXISTS "creatorPayout" INTEGER NOT NULL DEFAULT 0;
 
+-- Creator accept/decline flow. A paid booking starts as 'pending' until the
+-- creator responds; declining refunds the client through Paystack.
+ALTER TABLE "Booking" ADD COLUMN IF NOT EXISTS "creatorNotifiedAt" TIMESTAMP(3);
+ALTER TABLE "Booking" ADD COLUMN IF NOT EXISTS "respondedAt" TIMESTAMP(3);
+ALTER TABLE "Booking" ADD COLUMN IF NOT EXISTS "refundStatus" TEXT NOT NULL DEFAULT 'none';
+
 CREATE INDEX IF NOT EXISTS "Booking_creatorId_idx" ON "Booking"("creatorId");
 CREATE INDEX IF NOT EXISTS "Booking_status_idx" ON "Booking"("status");
 CREATE INDEX IF NOT EXISTS "Booking_clientId_idx" ON "Booking"("clientId");
@@ -183,3 +189,34 @@ CREATE TABLE IF NOT EXISTS "AppSettings" (
   "settings" JSONB NOT NULL,
   "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Where a creator's withdrawals are sent. Kept out of "Creator" so bank
+-- details can never leak through the public creator APIs.
+CREATE TABLE IF NOT EXISTS "CreatorPayoutAccount" (
+  "creatorId" TEXT PRIMARY KEY REFERENCES "Creator"("id") ON DELETE CASCADE,
+  "bankName" TEXT NOT NULL,
+  "bankCode" TEXT NOT NULL,
+  "accountNumber" TEXT NOT NULL,
+  "accountName" TEXT NOT NULL,
+  "recipientCode" TEXT NOT NULL,
+  "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Earnings ledger = SUM(Booking.creatorPayout) for confirmed/completed paid
+-- bookings, minus withdrawals that are pending, processing or successful.
+-- Failed/reversed withdrawals drop out and the money returns to the balance.
+CREATE TABLE IF NOT EXISTS "Withdrawal" (
+  "id" TEXT PRIMARY KEY,
+  "creatorId" TEXT NOT NULL REFERENCES "Creator"("id") ON DELETE CASCADE,
+  "amount" INTEGER NOT NULL CHECK ("amount" > 0),
+  "status" TEXT NOT NULL DEFAULT 'pending',
+  "reference" TEXT NOT NULL UNIQUE,
+  "bankName" TEXT NOT NULL,
+  "accountNumber" TEXT NOT NULL,
+  "accountName" TEXT NOT NULL,
+  "failureReason" TEXT,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS "Withdrawal_creatorId_idx" ON "Withdrawal"("creatorId");

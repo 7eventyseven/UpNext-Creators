@@ -15,6 +15,7 @@ import {
   Home,
   LogOut,
   Search,
+  Wallet,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { Logo } from "@/components/Logo";
@@ -53,6 +54,8 @@ export function Header() {
     if (creator) {
       return [
         { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+        { href: "/dashboard/bookings", label: "Bookings", icon: Calendar },
+        { href: "/dashboard/earnings", label: "Earnings", icon: Wallet },
         { href: "/dashboard/briefs", label: "Briefs", icon: Inbox },
         { href: `/creators/${creator.id}`, label: "Profile", icon: User },
         { href: "/subscribe", label: "Go Pro", icon: Crown },

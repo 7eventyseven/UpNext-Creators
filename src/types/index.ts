@@ -71,6 +71,48 @@ export interface Booking {
   commissionPercent?: number;
   commission?: number;
   creatorPayout?: number;
+  /** Set when a decline triggered a Paystack refund ("failed" needs admin attention). */
+  refundStatus?: "none" | "requested" | "failed";
+}
+
+export type WithdrawalStatus =
+  | "pending"
+  | "processing"
+  | "success"
+  | "failed"
+  | "reversed";
+
+export interface Withdrawal {
+  id: string;
+  amount: number;
+  status: WithdrawalStatus;
+  reference: string;
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+  failureReason?: string;
+  createdAt: string;
+}
+
+export interface PayoutAccount {
+  bankName: string;
+  bankCode: string;
+  accountNumber: string;
+  accountName: string;
+}
+
+export interface EarningsSummary {
+  /** Creator's share of every confirmed/completed paid booking. */
+  totalEarned: number;
+  /** Sum of the UpNext commission taken from those bookings (informational). */
+  totalCommission: number;
+  /** Creator's share of paid bookings still waiting for their accept/decline. */
+  pendingEarnings: number;
+  /** Already withdrawn or in flight to the bank. */
+  withdrawn: number;
+  /** What can be withdrawn right now. */
+  available: number;
+  minWithdrawal: number;
 }
 
 export interface ChatMessage {

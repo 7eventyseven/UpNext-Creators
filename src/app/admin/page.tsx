@@ -14,6 +14,7 @@ export default function AdminDashboard() {
     pending: 0,
     categories: 0,
     revenue: 0,
+    commissionRevenue: 0,
   });
 
   useEffect(() => {
@@ -25,6 +26,7 @@ export default function AdminDashboard() {
         pending: number;
         categories: number;
         revenue: number;
+        commissionRevenue: number;
       };
     }>("/api/admin/stats")
       .then((data) => setStats(data.stats))
@@ -68,7 +70,15 @@ export default function AdminDashboard() {
       color: "bg-olive-100 text-olive-700",
     },
     {
-      label: "Booking Revenue",
+      label: "UpNext Commission",
+      value: formatPrice(stats.commissionRevenue),
+      icon: TrendingUp,
+      href: "/admin/bookings",
+      color: "bg-amber-100 text-amber-700",
+      isText: true,
+    },
+    {
+      label: "Gross Booking Volume",
       value: formatPrice(stats.revenue),
       icon: TrendingUp,
       href: "/admin/bookings",

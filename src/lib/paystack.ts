@@ -10,6 +10,7 @@ import {
   getAppSettingsRow,
   setCreatorSubscription,
 } from "@/lib/repository";
+import { notifyBookingCreated } from "@/lib/booking-response";
 import type { Booking } from "@/types";
 
 export type PaidTier = "pro" | "premium";
@@ -180,6 +181,8 @@ export async function initializeBookingCheckout(input: BookingCheckoutInput) {
           clientPhone: input.clientPhone,
           notes: input.notes.slice(0, 400),
           commissionPercent: String(split.commissionPercent),
+          // Used to build the accept/decline link in the creator's email.
+          appOrigin: new URL(input.callbackUrl).origin,
         },
       }),
     }
@@ -197,6 +200,138 @@ export async function initializeBookingCheckout(input: BookingCheckoutInput) {
     split,
   };
 }
+
+/* ------------------------------------------------------------------ */
+/* Refunds                                                             */
+/* ------------------------------------------------------------------ */
+
+/** Refunds the full amount of a transaction back to the buyer's card/bank. */
+export async function refundTransaction(reference: string) {
+  const payload = await paystackFetch<{ status: boolean; message: string }>(
+    "/refund",
+    { method: "POST", body: JSON.stringify({ transaction: reference }) }
+  );
+  if (!payload.status) {
+    throw new Error(payload.message || "Paystack could not refund this payment");
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Payouts: banks, recipients, transfers                               */
+/* ------------------------------------------------------------------ */
+
+export type PaystackBank = { name: string; code: string };
+
+export async function listNigerianBanks(): Promise<PaystackBank[]> {
+  const payload = await paystackFetch<{
+    status: boolean;
+    message: string;
+    data?: { name: string; code: string; active: boolean }[];
+  }>("/bank?country=nigeria&currency=NGN&perPage=200");
+  if (!payload.status || !payload.data) {
+    throw new Error(payload.message || "Could not load banks");
+  }
+  const seen = new Set<string>();
+  return payload.data
+    .filter((b) => b.active !== false)
+    .filter((b) => (seen.has(b.code) ? false : (seen.add(b.code), true)))
+    .map((b) => ({ name: b.name, code: b.code }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** Looks up the registered holder name for an account number. */
+export async function resolveBankAccount(accountNumber: string, bankCode: string) {
+  const payload = await paystackFetch<{
+    status: boolean;
+    message: string;
+    data?: { account_name: string; account_number: string };
+  }>(
+    `/bank/resolve?account_number=${encodeURIComponent(accountNumber)}&bank_code=${encodeURIComponent(bankCode)}`
+  );
+  if (!payload.status || !payload.data) {
+    throw new Error(
+      payload.message || "Could not verify this account number"
+    );
+  }
+  return { accountName: payload.data.account_name };
+}
+
+export async function createTransferRecipient(input: {
+  accountName: string;
+  accountNumber: string;
+  bankCode: string;
+}) {
+  const payload = await paystackFetch<{
+    status: boolean;
+    message: string;
+    data?: { recipient_code: string };
+  }>("/transferrecipient", {
+    method: "POST",
+    body: JSON.stringify({
+      type: "nuban",
+      name: input.accountName,
+      account_number: input.accountNumber,
+      bank_code: input.bankCode,
+      currency: "NGN",
+    }),
+  });
+  if (!payload.status || !payload.data) {
+    throw new Error(payload.message || "Could not save this bank account");
+  }
+  return payload.data.recipient_code;
+}
+
+export type TransferOutcome = "processing" | "success" | "failed";
+
+/**
+ * Sends money from the UpNext Paystack balance to a creator's bank account.
+ * The final result arrives on the `transfer.*` webhook.
+ */
+export async function initiateTransfer(input: {
+  amount: number;
+  recipientCode: string;
+  reference: string;
+  reason: string;
+}): Promise<{ outcome: TransferOutcome; message: string }> {
+  const payload = await paystackFetch<{
+    status: boolean;
+    message: string;
+    data?: { status: string };
+  }>("/transfer", {
+    method: "POST",
+    body: JSON.stringify({
+      source: "balance",
+      amount: input.amount * 100,
+      recipient: input.recipientCode,
+      reference: input.reference,
+      reason: input.reason,
+      currency: "NGN",
+    }),
+  });
+
+  if (!payload.status || !payload.data) {
+    return { outcome: "failed", message: payload.message };
+  }
+
+  const status = payload.data.status;
+  if (status === "success") return { outcome: "success", message: "" };
+  if (status === "otp") {
+    // The Paystack account requires an OTP per transfer, so it can't be automated.
+    return {
+      outcome: "failed",
+      message:
+        "Transfers need OTP approval. Disable transfer OTP in the Paystack dashboard (Settings > Preferences).",
+    };
+  }
+  if (status === "failed" || status === "reversed") {
+    return { outcome: "failed", message: payload.message };
+  }
+  return { outcome: "processing", message: "" };
+}
+
+/* ------------------------------------------------------------------ */
+/* Payment fulfilment                                                  */
+/* ------------------------------------------------------------------ */
 
 async function fulfillSubscription(
   tx: NonNullable<PaystackVerifyResponse["data"]>
@@ -265,6 +400,16 @@ async function fulfillBooking(
     commission: split.commission,
     creatorPayout: split.creatorPayout,
   });
+
+  // Payment can be fulfilled by both the redirect and the webhook; the
+  // notification is claimed in the DB so the creator is only emailed once.
+  const origin =
+    process.env.APP_URL?.replace(/\/$/, "") ||
+    metaString(metadata, "appOrigin") ||
+    "http://localhost:3000";
+  await notifyBookingCreated(booking, origin).catch((err) =>
+    console.error("[booking] could not send notifications", err)
+  );
 
   return { ok: true, kind: "booking", booking };
 }

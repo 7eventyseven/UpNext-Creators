@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  CalendarCheck,
   ExternalLink,
+  Wallet,
   Inbox,
   Loader2,
   LogOut,
@@ -125,8 +127,22 @@ export default function DashboardPage() {
         </div>
         <div className="flex gap-2">
           <Link
-            href="/dashboard/briefs"
+            href="/dashboard/bookings"
             className="inline-flex items-center gap-2 rounded-xl bg-olive-600 px-4 py-2 text-sm font-medium text-milky-50 hover:bg-olive-700"
+          >
+            <CalendarCheck size={16} />
+            Bookings
+          </Link>
+          <Link
+            href="/dashboard/earnings"
+            className="inline-flex items-center gap-2 rounded-xl bg-olive-600 px-4 py-2 text-sm font-medium text-milky-50 hover:bg-olive-700"
+          >
+            <Wallet size={16} />
+            Earnings
+          </Link>
+          <Link
+            href="/dashboard/briefs"
+            className="inline-flex items-center gap-2 rounded-xl border border-olive-200 px-4 py-2 text-sm font-medium text-olive-700 hover:bg-olive-50"
           >
             <Inbox size={16} />
             Briefs

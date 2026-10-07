@@ -23,7 +23,7 @@ import { Booking, ClientProfile, Creator } from "@/types";
 
 const statusConfig = {
   pending: {
-    label: "Pending",
+    label: "Awaiting creator",
     icon: Hourglass,
     color: "text-amber-600 bg-amber-50 border-amber-200",
   },
@@ -38,7 +38,7 @@ const statusConfig = {
     color: "text-olive-700 bg-olive-100 border-olive-300",
   },
   cancelled: {
-    label: "Cancelled",
+    label: "Declined / refunded",
     icon: XCircle,
     color: "text-red-600 bg-red-50 border-red-200",
   },

@@ -57,10 +57,19 @@ function BookingConfirmationInner() {
           <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-olive-100">
             <CheckCircle size={32} className="text-olive-600" />
           </div>
-          <h1 className="text-2xl font-bold text-olive-900">Booking confirmed</h1>
+          <h1 className="text-2xl font-bold text-olive-900">
+            {booking.status === "pending"
+              ? "Booking request sent"
+              : booking.status === "cancelled"
+                ? "Booking declined"
+                : "Booking confirmed"}
+          </h1>
           <p className="mt-3 text-olive-600 leading-relaxed">
-            Payment of {formatPrice(booking.price)} went to UpNext via Paystack.
-            {booking.creatorName} has been booked for {booking.serviceName}.
+            {booking.status === "pending"
+              ? `Your payment of ${formatPrice(booking.price)} was received. ${booking.creatorName} has been notified by email and will accept or decline ${booking.serviceName}. If they decline, you are refunded automatically.`
+              : booking.status === "cancelled"
+                ? `${booking.creatorName} couldn't take ${booking.serviceName}. Your ${formatPrice(booking.price)} is being refunded.`
+                : `${booking.creatorName} has accepted your booking for ${booking.serviceName}.`}
           </p>
           <Link
             href={`/creators/${booking.creatorId}`}

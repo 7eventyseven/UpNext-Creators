@@ -526,6 +526,10 @@ export async function findBookingByPaymentReference(reference: string) {
   return row ? mapBooking(row) : null;
 }
 
+/**
+ * A paid booking starts as "pending" and only becomes bookable earnings once
+ * the creator accepts it.
+ */
 export async function createPaidBooking(input: {
   creatorId: string;
   creatorName: string;
@@ -555,7 +559,7 @@ export async function createPaidBooking(input: {
       status, "paymentReference", "paymentStatus", "commissionPercent",
       "commission", "creatorPayout", "updatedAt"
     ) VALUES (
-      $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'confirmed',
+      $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'pending',
       $14,'paid',$15,$16,$17,CURRENT_TIMESTAMP
     )
     ON CONFLICT ("paymentReference") DO NOTHING
@@ -820,12 +824,17 @@ export async function upsertAppSettings(settings: unknown) {
 }
 
 export async function getAdminStats() {
-  const [creators, bookings, categories] = await Promise.all([
+  const [creators, bookings, categories, commissions] = await Promise.all([
     queryAll<{ isSubscribed: boolean }>(`SELECT "isSubscribed" FROM "Creator"`),
     queryAll<{ status: string; price: number }>(
       `SELECT status, price FROM "Booking"`
     ),
     queryOne<{ count: string }>(`SELECT COUNT(*)::text AS count FROM "Category"`),
+    queryOne<{ total: number }>(
+      `SELECT COALESCE(SUM("commission"), 0)::int AS total
+         FROM "Booking"
+        WHERE "paymentStatus" = 'paid' AND status IN ('confirmed', 'completed')`
+    ),
   ]);
 
   return {
@@ -837,5 +846,7 @@ export async function getAdminStats() {
     revenue: bookings
       .filter((b) => b.status !== "cancelled")
       .reduce((sum, b) => sum + b.price, 0),
+    // UpNext's own cut: commission on bookings the creator accepted.
+    commissionRevenue: commissions?.total ?? 0,
   };
 }

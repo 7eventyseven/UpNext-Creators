@@ -173,7 +173,7 @@ export default function CreatorProfilePage({
         {booked && (
           <div className="mt-4 rounded-xl bg-olive-50 border border-olive-200 px-4 py-3 text-sm text-olive-700 flex items-center gap-2">
             <CheckCircle size={18} className="text-olive-600 shrink-0" />
-            Booking confirmed! Check your bookings tab for details.
+            Booking request sent! {creator.name.split(" ")[0]} will accept or decline soon. Check your bookings tab for updates.
           </div>
         )}
 

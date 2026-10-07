@@ -7,7 +7,6 @@ import { Sparkles, UserPlus } from "lucide-react";
 import { getCategories } from "@/lib/categories";
 import { StateDropdown } from "@/components/StateDropdown";
 import { SelectDropdown } from "@/components/SelectDropdown";
-import { nigeriaStates } from "@/lib/nigeria-states";
 import { registerCreator, getLoggedInCreator } from "@/lib/creator-auth";
 import { setAppRole } from "@/lib/client-auth";
 import { processImageUpload, uploadLimits } from "@/lib/file-upload";
@@ -43,7 +42,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [category, setCategory] = useState("");
-  const [state, setState] = useState<string>(nigeriaStates[0]);
+  const [state, setState] = useState<string>("");
   const [bio, setBio] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [avatar, setAvatar] = useState<string | null>(null);
@@ -90,6 +89,11 @@ export default function RegisterPage() {
     }
     if (!category) {
       setError("Please select a category.");
+      return;
+    }
+
+    if (!state) {
+      setError("Please select your state.");
       return;
     }
 

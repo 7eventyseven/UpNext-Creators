@@ -5,8 +5,10 @@ import type {
   Conversation,
   Creator,
   CreatorVideo,
+  PayoutAccount,
   Review,
   Service,
+  Withdrawal,
 } from "@/types";
 
 export type SubscriptionTier = "free" | "pro" | "premium";
@@ -99,8 +101,67 @@ export interface BookingRow {
   commissionPercent: number;
   commission: number;
   creatorPayout: number;
+  creatorNotifiedAt: Date | null;
+  respondedAt: Date | null;
+  refundStatus: RefundStatus;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export type RefundStatus = "none" | "requested" | "failed";
+
+export type WithdrawalStatus =
+  | "pending"
+  | "processing"
+  | "success"
+  | "failed"
+  | "reversed";
+
+export interface WithdrawalRow {
+  id: string;
+  creatorId: string;
+  amount: number;
+  status: WithdrawalStatus;
+  reference: string;
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+  failureReason: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface PayoutAccountRow {
+  creatorId: string;
+  bankName: string;
+  bankCode: string;
+  accountNumber: string;
+  accountName: string;
+  recipientCode: string;
+  updatedAt: Date;
+}
+
+export function mapWithdrawal(w: WithdrawalRow): Withdrawal {
+  return {
+    id: w.id,
+    amount: w.amount,
+    status: w.status,
+    reference: w.reference,
+    bankName: w.bankName,
+    accountNumber: w.accountNumber,
+    accountName: w.accountName,
+    failureReason: w.failureReason ?? undefined,
+    createdAt: w.createdAt.toISOString(),
+  };
+}
+
+export function mapPayoutAccount(a: PayoutAccountRow): PayoutAccount {
+  return {
+    bankName: a.bankName,
+    bankCode: a.bankCode,
+    accountNumber: a.accountNumber,
+    accountName: a.accountName,
+  };
 }
 
 export interface ReviewRow {
@@ -241,6 +302,7 @@ export function mapBooking(b: BookingRow): Booking {
     commissionPercent: b.commissionPercent ?? 0,
     commission: b.commission ?? 0,
     creatorPayout: b.creatorPayout ?? b.price,
+    refundStatus: b.refundStatus ?? "none",
   };
 }
 

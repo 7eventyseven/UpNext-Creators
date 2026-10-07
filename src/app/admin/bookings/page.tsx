@@ -148,6 +148,14 @@ export default function AdminBookingsPage() {
                   </div>
                 </div>
 
+                {booking.refundStatus === "failed" && (
+                  <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-600">
+                    Creator declined but the automatic Paystack refund failed.
+                    Refund {booking.paymentReference} manually in the Paystack
+                    dashboard.
+                  </p>
+                )}
+
                 <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 text-sm">
                   <div className="flex items-center gap-2 text-olive-600">
                     <Calendar size={14} className="text-olive-400" />
