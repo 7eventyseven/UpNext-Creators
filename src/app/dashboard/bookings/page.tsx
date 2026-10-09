@@ -135,17 +135,17 @@ export default function CreatorBookingsPage() {
   const others = bookings.filter((b) => b.status !== "pending");
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-4 sm:px-6 py-8">
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-olive-900">Bookings</h1>
-          <p className="text-olive-600">
+    <div className="mx-auto w-full max-w-4xl px-4 sm:px-6 py-6 sm:py-8">
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-3 sm:gap-4">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-xl font-bold text-olive-900 sm:text-2xl">Bookings</h1>
+          <p className="text-sm text-olive-600 sm:text-base">
             Accept or decline requests from clients who have already paid.
           </p>
         </div>
         <Link
           href="/dashboard/earnings"
-          className="inline-flex items-center gap-2 rounded-xl border border-olive-200 px-4 py-2 text-sm font-medium text-olive-700 hover:bg-olive-50"
+          className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-olive-200 px-4 py-2.5 text-sm font-medium text-olive-700 hover:bg-olive-50"
         >
           <Wallet size={16} />
           Earnings
@@ -253,11 +253,11 @@ function BookingCard({
   children?: React.ReactNode;
 }) {
   return (
-    <article className="rounded-2xl border border-olive-200/70 bg-milky-50 p-5 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
+    <article className="rounded-2xl border border-olive-200/70 bg-milky-50 p-4 shadow-sm sm:p-5">
+      <div className="flex flex-col-reverse items-start gap-2 sm:flex-row sm:justify-between sm:gap-3">
         <div className="min-w-0">
-          <h3 className="font-semibold text-olive-900">{booking.serviceName}</h3>
-          <p className="text-sm text-olive-600">for {booking.clientName}</p>
+          <h3 className="break-words font-semibold text-olive-900">{booking.serviceName}</h3>
+          <p className="break-words text-sm text-olive-600">for {booking.clientName}</p>
         </div>
         <span
           className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${statusStyle[booking.status]}`}
@@ -290,7 +290,7 @@ function BookingCard({
       </div>
 
       {booking.notes && (
-        <p className="mt-3 border-t border-olive-100 pt-3 text-sm text-olive-500">
+        <p className="mt-3 break-words border-t border-olive-100 pt-3 text-sm text-olive-500">
           {booking.notes}
         </p>
       )}

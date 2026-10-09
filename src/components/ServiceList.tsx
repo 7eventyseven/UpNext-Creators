@@ -21,7 +21,7 @@ export const emptyService = (): ServiceEntry => ({
 });
 
 const inputClass =
-  "w-full rounded-lg border border-olive-200 bg-white px-3 py-2 text-sm text-olive-900 focus:border-olive-500 focus:outline-none focus:ring-2 focus:ring-olive-200";
+  "w-full rounded-lg border border-olive-200 bg-white px-3 py-2.5 text-base text-olive-900 sm:py-2 sm:text-sm focus:border-olive-500 focus:outline-none focus:ring-2 focus:ring-olive-200";
 
 interface ServiceListProps {
   services: ServiceEntry[];
@@ -49,7 +49,7 @@ export function ServiceList({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-olive-600">
           List what you offer and how much you charge (NGN)
         </p>
@@ -57,7 +57,7 @@ export function ServiceList({
           <button
             type="button"
             onClick={addService}
-            className="inline-flex items-center gap-1 rounded-lg bg-olive-100 px-3 py-1.5 text-sm font-medium text-olive-700 hover:bg-olive-200"
+            className="inline-flex items-center gap-1 rounded-lg bg-olive-100 px-3 py-2 text-sm font-medium text-olive-700 hover:bg-olive-200"
           >
             <Plus size={14} />
             Add service
@@ -78,7 +78,7 @@ export function ServiceList({
         services.map((service, i) => (
           <div
             key={service.id}
-            className="rounded-xl border border-olive-200 bg-white p-4 space-y-3"
+            className="rounded-xl border border-olive-200 bg-white p-3 space-y-3 sm:p-4"
           >
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium text-olive-700">
@@ -87,7 +87,7 @@ export function ServiceList({
               <button
                 type="button"
                 onClick={() => removeService(service.id)}
-                className="text-red-500 hover:text-red-700"
+                className="-m-2 rounded-lg p-2 text-red-500 hover:bg-red-50 hover:text-red-700"
                 aria-label="Remove service"
               >
                 <Trash2 size={16} />

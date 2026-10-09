@@ -19,6 +19,12 @@ export const occasionByCategory: Record<string, string[]> = {
   "Content Creation": ["UGC ads", "Social content", "Influencer collab", "Other"],
   "Fashion & Styling": ["Editorial", "Personal styling", "Event look", "Other"],
   "Writing & Copy": ["Brand copy", "Script", "Blog / article", "Other"],
+  Modelling: ["Runway", "Brand campaign", "Editorial shoot", "Event hosting", "Other"],
+  "Dance & Choreography": ["Wedding dance", "Music video", "Stage performance", "Lessons / workshop", "Other"],
+  "Hair & Beauty": ["Bridal hair", "Braiding / styling", "Salon at home", "Photoshoot", "Other"],
+  "Event Planning": ["Wedding", "Birthday", "Corporate event", "Naming / traditional", "Other"],
+  "Visual & Fine Arts": ["Portrait / painting", "Mural", "Custom artwork", "Illustration", "Other"],
+  "Acting & Entertainment": ["Film / skit", "Stage play", "MC / host", "Comedy / live act", "Other"],
 };
 
 function safeParse<T>(key: string, fallback: T): T {

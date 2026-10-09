@@ -32,6 +32,8 @@ import {
   serviceToEntry,
 } from "@/components/ServiceList";
 import { AuthSection, authInputClass } from "@/components/auth/AuthSection";
+import { PlanPanel } from "@/components/PlanPanel";
+import { ReferralPanel } from "@/components/ReferralPanel";
 import { Creator } from "@/types";
 
 const inputClass = authInputClass;
@@ -117,39 +119,41 @@ export default function DashboardPage() {
   if (!creator) return null;
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-8">
-      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+    <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-6 sm:py-8">
+      <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-olive-900">Creator Dashboard</h1>
-          <p className="text-olive-600">
+          <h1 className="text-xl font-bold text-olive-900 sm:text-2xl">
+            Creator Dashboard
+          </h1>
+          <p className="text-sm text-olive-600 sm:text-base">
             Manage your profile and services
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           <Link
             href="/dashboard/bookings"
-            className="inline-flex items-center gap-2 rounded-xl bg-olive-600 px-4 py-2 text-sm font-medium text-milky-50 hover:bg-olive-700"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-olive-600 px-4 py-2.5 text-sm font-medium text-milky-50 hover:bg-olive-700"
           >
             <CalendarCheck size={16} />
             Bookings
           </Link>
           <Link
             href="/dashboard/earnings"
-            className="inline-flex items-center gap-2 rounded-xl bg-olive-600 px-4 py-2 text-sm font-medium text-milky-50 hover:bg-olive-700"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-olive-600 px-4 py-2.5 text-sm font-medium text-milky-50 hover:bg-olive-700"
           >
             <Wallet size={16} />
             Earnings
           </Link>
           <Link
             href="/dashboard/briefs"
-            className="inline-flex items-center gap-2 rounded-xl border border-olive-200 px-4 py-2 text-sm font-medium text-olive-700 hover:bg-olive-50"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-olive-200 px-4 py-2.5 text-sm font-medium text-olive-700 hover:bg-olive-50"
           >
             <Inbox size={16} />
             Briefs
           </Link>
           <Link
             href={`/creators/${creator.id}`}
-            className="inline-flex items-center gap-2 rounded-xl border border-olive-200 px-4 py-2 text-sm font-medium text-olive-700 hover:bg-olive-50"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-olive-200 px-4 py-2.5 text-sm font-medium text-olive-700 hover:bg-olive-50"
           >
             <ExternalLink size={16} />
             View Profile
@@ -157,7 +161,7 @@ export default function DashboardPage() {
           <button
             type="button"
             onClick={handleSignOut}
-            className="inline-flex items-center gap-2 rounded-xl border border-olive-200 px-4 py-2 text-sm font-medium text-olive-700 hover:bg-olive-50"
+            className="hidden sm:inline-flex items-center gap-2 rounded-xl border border-olive-200 px-4 py-2 text-sm font-medium text-olive-700 hover:bg-olive-50"
           >
             <LogOut size={16} />
             Sign Out
@@ -165,7 +169,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-2">
+      <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4">
         <div className="rounded-xl border border-olive-200/70 bg-milky-50 p-4">
           <div className="flex items-center gap-2 text-olive-600 text-sm">
             <User size={16} />
@@ -185,11 +189,7 @@ export default function DashboardPage() {
                 day: "numeric",
                 month: "short",
                 year: "numeric",
-              })}{" "}
-              ·{" "}
-              <Link href="/subscribe" className="font-semibold text-olive-700 hover:underline">
-                Renew
-              </Link>
+              })}
             </p>
           )}
         </div>
@@ -197,7 +197,7 @@ export default function DashboardPage() {
 
       <form
         onSubmit={handleSave}
-        className="space-y-6 rounded-2xl border border-olive-200/70 bg-milky-50 p-6 shadow-sm"
+        className="space-y-6 rounded-2xl border border-olive-200/70 bg-milky-50 p-4 shadow-sm sm:p-6"
       >
         <ImageUpload
           label="Profile Picture"
@@ -297,6 +297,17 @@ export default function DashboardPage() {
           {saving ? "Saving..." : "Save Changes"}
         </button>
       </form>
+
+      <PlanPanel
+        creator={creator}
+        onSubscribed={async () => {
+          // Reload so the tier, badge and end date update straight away.
+          const fresh = await getLoggedInCreator();
+          if (fresh) setCreator(fresh);
+        }}
+      />
+
+      <ReferralPanel />
     </div>
   );
 }

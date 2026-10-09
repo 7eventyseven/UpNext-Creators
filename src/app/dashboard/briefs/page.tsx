@@ -54,7 +54,7 @@ export default function CreativeBriefsPage() {
   const done = rows.filter((r) => r.myInvite.status !== "pending");
 
   return (
-    <div className="mx-auto max-w-2xl px-4 sm:px-6 py-8">
+    <div className="mx-auto max-w-2xl px-4 sm:px-6 py-6 sm:py-8">
       <Link
         href="/dashboard"
         className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-olive-600 hover:text-olive-800"
@@ -63,8 +63,8 @@ export default function CreativeBriefsPage() {
         Dashboard
       </Link>
 
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-olive-900">Incoming briefs</h1>
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-xl font-bold text-olive-900 sm:text-2xl">Incoming briefs</h1>
         <p className="text-olive-600 mt-1">
           Subscribed creatives see matching briefs first. Accept to show interest
           — they&apos;ll book from your profile.
@@ -72,7 +72,7 @@ export default function CreativeBriefsPage() {
       </div>
 
       {pending.length === 0 && done.length === 0 ? (
-        <div className="rounded-2xl border border-olive-200/70 bg-milky-50 p-12 text-center">
+        <div className="rounded-2xl border border-olive-200/70 bg-milky-50 p-8 text-center sm:p-12">
           <Inbox size={40} className="mx-auto mb-3 text-olive-300" />
           <p className="font-medium text-olive-700">No briefs yet</p>
           <p className="text-sm text-olive-500 mt-1">
@@ -90,9 +90,9 @@ export default function CreativeBriefsPage() {
               {pending.map((brief) => (
                 <article
                   key={brief.id}
-                  className="rounded-2xl border border-olive-200/70 bg-milky-50 p-5 shadow-sm"
+                  className="rounded-2xl border border-olive-200/70 bg-milky-50 p-4 shadow-sm sm:p-5"
                 >
-                  <h3 className="font-semibold text-olive-900 inline-flex items-center gap-2">
+                  <h3 className="font-semibold text-olive-900 flex flex-wrap items-center gap-x-2 gap-y-1">
                     {brief.category} · {brief.occasion}
                     {brief.myInvite.priority && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-olive-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-olive-700">
@@ -101,15 +101,15 @@ export default function CreativeBriefsPage() {
                       </span>
                     )}
                   </h3>
-                  <p className="mt-1 text-sm text-olive-600 flex items-center gap-1">
-                    <MapPin size={14} />
+                  <p className="mt-1 text-sm text-olive-600 flex items-start gap-1">
+                    <MapPin size={14} className="mt-0.5 shrink-0" />
                     {brief.state} · {brief.date} · {budgetLabel(brief.budget)}
                   </p>
                   <p className="mt-2 text-sm text-olive-700">
                     From <strong>{brief.clientName}</strong>
                   </p>
                   {brief.notes && (
-                    <p className="mt-2 text-sm text-olive-500 border-t border-olive-100 pt-2">
+                    <p className="mt-2 break-words text-sm text-olive-500 border-t border-olive-100 pt-2">
                       {brief.notes}
                     </p>
                   )}
@@ -146,8 +146,8 @@ export default function CreativeBriefsPage() {
                   key={brief.id}
                   className="rounded-xl border border-olive-100 bg-white px-4 py-3 flex items-center justify-between gap-3"
                 >
-                  <div>
-                    <p className="text-sm font-medium text-olive-900">
+                  <div className="min-w-0">
+                    <p className="break-words text-sm font-medium text-olive-900">
                       {brief.occasion} · {brief.clientName}
                     </p>
                     <p className="text-xs text-olive-500">{brief.state}</p>

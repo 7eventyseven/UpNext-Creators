@@ -228,17 +228,17 @@ export default function EarningsPage() {
     : [];
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-4 sm:px-6 py-8">
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-olive-900">Earnings</h1>
-          <p className="text-olive-600">
+    <div className="mx-auto w-full max-w-4xl px-4 sm:px-6 py-6 sm:py-8">
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-3 sm:gap-4">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-xl font-bold text-olive-900 sm:text-2xl">Earnings</h1>
+          <p className="text-sm text-olive-600 sm:text-base">
             Your share of every accepted booking. Withdraw whenever you like.
           </p>
         </div>
         <Link
           href="/dashboard/bookings"
-          className="inline-flex items-center gap-2 rounded-xl border border-olive-200 px-4 py-2 text-sm font-medium text-olive-700 hover:bg-olive-50"
+          className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-olive-200 px-4 py-2.5 text-sm font-medium text-olive-700 hover:bg-olive-50"
         >
           <CalendarCheck size={16} />
           Bookings
@@ -262,14 +262,14 @@ export default function EarningsPage() {
         </div>
       ) : (
         <div className="space-y-6">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
             {cards.map(({ label, value, icon: Icon, tone, sub, hint }) => (
-              <div key={label} className={`rounded-2xl p-5 shadow-sm ${tone}`}>
+              <div key={label} className={`rounded-2xl p-4 shadow-sm sm:p-5 ${tone}`}>
                 <div className="flex items-center justify-between">
                   <p className={`text-sm ${sub}`}>{label}</p>
                   <Icon size={18} className={sub} />
                 </div>
-                <p className="mt-2 text-3xl font-bold">{formatPrice(value)}</p>
+                <p className="mt-2 text-2xl font-bold sm:text-3xl">{formatPrice(value)}</p>
                 <p className={`mt-1 text-xs ${sub}`}>{hint}</p>
               </div>
             ))}
@@ -334,12 +334,12 @@ export default function EarningsPage() {
           >
             {account && !editingAccount ? (
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-xl bg-olive-100 p-2.5 text-olive-700">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="shrink-0 rounded-xl bg-olive-100 p-2.5 text-olive-700">
                     <Landmark size={18} />
                   </div>
-                  <div>
-                    <p className="font-semibold text-olive-900">
+                  <div className="min-w-0">
+                    <p className="break-words font-semibold text-olive-900">
                       {account.accountName}
                     </p>
                     <p className="text-sm text-olive-600">
@@ -350,7 +350,7 @@ export default function EarningsPage() {
                 <button
                   type="button"
                   onClick={() => setEditingAccount(true)}
-                  className="text-sm font-semibold text-olive-700 hover:underline"
+                  className="rounded-lg px-2 py-2 text-sm font-semibold text-olive-700 hover:underline"
                 >
                   Change
                 </button>
@@ -427,7 +427,7 @@ export default function EarningsPage() {
                     className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm"
                   >
                     <div className="min-w-0">
-                      <p className="font-medium text-olive-900">
+                      <p className="break-words font-medium text-olive-900">
                         {b.serviceName} · {b.clientName}
                       </p>
                       <p className="text-xs text-olive-500">

@@ -10,6 +10,11 @@ export interface AppSettings {
   maintenanceMessage: string;
   /** Share of each booking that stays with UpNext (client still pays the full service price). */
   bookingCommissionPercent: number;
+  /**
+   * Free plan days a creator earns when someone they invited pays for their
+   * first plan. 0 turns the referral programme off.
+   */
+  referralRewardDays: number;
   subscriptions: {
     free: SubscriptionPlanSettings;
     pro: SubscriptionPlanSettings;
@@ -22,6 +27,7 @@ export const defaultAppSettings: AppSettings = {
   maintenanceMessage:
     "We're doing a bit of maintenance. Creator sign in and registration are temporarily unavailable. Please check back soon.",
   bookingCommissionPercent: 15,
+  referralRewardDays: 30,
   subscriptions: {
     free: {
       name: "Free",
@@ -78,6 +84,7 @@ export function mergeAppSettings(partial: unknown): AppSettings {
   });
 
   const commission = Number(incoming.bookingCommissionPercent);
+  const rewardDays = Number(incoming.referralRewardDays);
   return {
     maintenanceMode:
       typeof incoming.maintenanceMode === "boolean"
@@ -90,6 +97,10 @@ export function mergeAppSettings(partial: unknown): AppSettings {
       Number.isFinite(commission)
         ? Math.min(50, Math.max(0, Math.round(commission)))
         : defaultAppSettings.bookingCommissionPercent,
+    referralRewardDays:
+      incoming.referralRewardDays != null && Number.isFinite(rewardDays)
+        ? Math.min(365, Math.max(0, Math.round(rewardDays)))
+        : defaultAppSettings.referralRewardDays,
     subscriptions: {
       free: mergePlan(
         defaultAppSettings.subscriptions.free,

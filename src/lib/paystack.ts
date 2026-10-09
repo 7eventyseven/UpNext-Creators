@@ -352,7 +352,13 @@ async function fulfillSubscription(
   if (!creator) throw new Error("Creator not found for this payment");
 
   // Idempotent per payment reference: the redirect and the webhook both land here.
-  await activateSubscription({ creatorId, tier, reference: tx.reference });
+  const settings = await loadSettings();
+  await activateSubscription({
+    creatorId,
+    tier,
+    reference: tx.reference,
+    referralRewardDays: settings.referralRewardDays,
+  });
   return { ok: true, kind: "subscription", tier, creatorId };
 }
 

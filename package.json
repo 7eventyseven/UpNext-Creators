@@ -9,6 +9,7 @@
     "lint": "next lint",
     "db:schema": "tsx db/apply-schema.ts",
     "db:seed": "tsx db/seed.ts",
+    "db:categories": "tsx db/sync-categories.ts",
     "db:setup": "tsx db/seed.ts",
     "pwa:icons": "node scripts/generate-pwa-icons.mjs"
   },

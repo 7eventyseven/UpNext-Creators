@@ -51,6 +51,8 @@ export const registerSchema = z.object({
   avatar: z.string().min(1),
   videos: z.array(videoSchema).default([]),
   services: z.array(serviceSchema).default([]),
+  /** Code of the creator who invited this one. Optional; unknown codes are ignored. */
+  referralCode: z.string().max(40).optional(),
 });
 
 export const clientRegisterSchema = z.object({

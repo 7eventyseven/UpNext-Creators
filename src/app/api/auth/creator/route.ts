@@ -18,6 +18,7 @@ import {
   getAppSettingsRow,
 } from "@/lib/repository";
 import { defaultAppSettings, mergeAppSettings } from "@/lib/app-settings";
+import { recordReferral } from "@/lib/referral-repo";
 import { registerSchema } from "@/lib/validators";
 import { NextRequest } from "next/server";
 import { z } from "zod";
@@ -96,6 +97,13 @@ export async function POST(req: NextRequest) {
           earnings: v.earnings ?? 0,
         })),
       });
+
+      // A bad or missing referral code must never block sign up.
+      if (input.referralCode) {
+        await recordReferral(creator.id, input.referralCode).catch((err) =>
+          console.error("[referral] could not record referral", err)
+        );
+      }
 
       const token = await signToken({
         role: "creator",

@@ -9,6 +9,12 @@ export const defaultCategories = [
   "Content Creation",
   "Fashion & Styling",
   "Writing & Copy",
+  "Modelling",
+  "Dance & Choreography",
+  "Hair & Beauty",
+  "Event Planning",
+  "Visual & Fine Arts",
+  "Acting & Entertainment",
 ];
 
 export async function getCategories(): Promise<string[]> {

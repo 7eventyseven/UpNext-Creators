@@ -203,6 +203,42 @@ export default function AdminSettingsPage() {
           </div>
         </section>
 
+        <section className="rounded-2xl border border-olive-200/70 bg-milky-50 p-4 sm:p-6 space-y-4">
+          <div>
+            <h2 className="text-lg font-semibold text-olive-900">
+              Referral reward
+            </h2>
+            <p className="text-sm text-olive-600">
+              Creators share their own link. When a creator they invited pays
+              for their first plan, the referrer gets this many free days
+              (Pro for Free creators, or added on top of their current plan).
+              Set to 0 to switch referrals off.
+            </p>
+          </div>
+          <div className="max-w-xs">
+            <label className="mb-1.5 block text-sm font-medium text-olive-700">
+              Free days per referral
+            </label>
+            <input
+              type="number"
+              min={0}
+              max={365}
+              className={inputClass}
+              value={form.referralRewardDays}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  referralRewardDays: Math.min(
+                    365,
+                    Math.max(0, Math.round(Number(e.target.value) || 0))
+                  ),
+                }))
+              }
+              required
+            />
+          </div>
+        </section>
+
         <section className="space-y-4">
           <div>
             <h2 className="text-lg font-semibold text-olive-900">

@@ -1,5 +1,6 @@
 import { query, queryAll, withTransaction } from "@/lib/db";
 import { BookingRow, mapBooking } from "@/lib/mappers";
+import { rewardReferrerOnFirstPayment } from "@/lib/referral-repo";
 
 /** A creator has this long, from payment, to accept or decline a booking. */
 export const BOOKING_RESPONSE_MINUTES = 30;
@@ -67,6 +68,8 @@ export async function activateSubscription(input: {
   creatorId: string;
   tier: "pro" | "premium";
   reference: string;
+  /** Free days owed to whoever invited this creator, if this is their first payment. */
+  referralRewardDays?: number;
 }) {
   await withTransaction(async (client) => {
     const inserted = await client.query(
@@ -92,6 +95,12 @@ export async function activateSubscription(input: {
               "updatedAt" = CURRENT_TIMESTAMP
         WHERE id = $1`,
       [input.creatorId, input.tier]
+    );
+
+    await rewardReferrerOnFirstPayment(
+      client,
+      input.creatorId,
+      input.referralRewardDays ?? 0
     );
   });
 }

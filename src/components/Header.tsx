@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Calendar,
-  Crown,
   Menu,
   X,
   LayoutDashboard,
@@ -58,7 +57,6 @@ export function Header() {
         { href: "/dashboard/earnings", label: "Earnings", icon: Wallet },
         { href: "/dashboard/briefs", label: "Briefs", icon: Inbox },
         { href: `/creators/${creator.id}`, label: "Profile", icon: User },
-        { href: "/subscribe", label: "Go Pro", icon: Crown },
       ];
     }
     if (client) {
@@ -115,7 +113,7 @@ export function Header() {
         </Link>
 
         {isAppUser ? (
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden lg:flex items-center gap-1">
             {appNavItems.map(({ href, label, icon: Icon }) => {
               const active =
                 href === "/"
@@ -221,7 +219,7 @@ export function Header() {
 
           <button
             type="button"
-            className={`${isAppUser ? "md:hidden" : "lg:hidden"} rounded-lg p-2 text-olive-700 hover:bg-olive-100`}
+            className="lg:hidden rounded-lg p-2 text-olive-700 hover:bg-olive-100"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label="Toggle menu"
           >
@@ -231,7 +229,7 @@ export function Header() {
       </div>
 
       {mobileOpen && (
-        <nav className={`${isAppUser ? "md:hidden" : "lg:hidden"} border-t border-olive-200/60 bg-milky-100 px-4 py-3 space-y-1`}>
+        <nav className="lg:hidden border-t border-olive-200/60 bg-milky-100 px-4 py-3 space-y-1">
           {isAppUser
             ? appNavItems.map(({ href, label, icon: Icon }) => {
                 const active =

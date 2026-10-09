@@ -41,6 +41,7 @@ export interface RegisterCreatorInput {
   avatar: string;
   videos: CreatorVideo[];
   services: Service[];
+  referralCode?: string;
 }
 
 export async function registerCreator(

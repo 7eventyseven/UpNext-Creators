@@ -79,6 +79,18 @@ CREATE TABLE IF NOT EXISTS "SubscriptionPayment" (
   "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Referrals. Every creator gets a short share code (existing rows are filled
+-- in too, each with its own random value). "referredBy" is who invited them.
+-- The reward is paid once, on the referred creator's first paid plan, and is
+-- recorded here so it can never be paid twice.
+ALTER TABLE "Creator" ADD COLUMN IF NOT EXISTS "referralCode" TEXT NOT NULL
+  DEFAULT upper(substr(md5(random()::text || clock_timestamp()::text), 1, 8));
+CREATE UNIQUE INDEX IF NOT EXISTS "Creator_referralCode_key" ON "Creator"("referralCode");
+ALTER TABLE "Creator" ADD COLUMN IF NOT EXISTS "referredBy" TEXT REFERENCES "Creator"("id") ON DELETE SET NULL;
+ALTER TABLE "Creator" ADD COLUMN IF NOT EXISTS "referralRewardedAt" TIMESTAMPTZ(3);
+ALTER TABLE "Creator" ADD COLUMN IF NOT EXISTS "referralRewardDays" INTEGER;
+CREATE INDEX IF NOT EXISTS "Creator_referredBy_idx" ON "Creator"("referredBy");
+
 CREATE INDEX IF NOT EXISTS "Creator_categoryName_idx" ON "Creator"("categoryName");
 CREATE INDEX IF NOT EXISTS "Creator_city_idx" ON "Creator"("city");
 CREATE INDEX IF NOT EXISTS "Creator_rank_idx" ON "Creator"("rank");

@@ -9,6 +9,7 @@ import { StateDropdown } from "@/components/StateDropdown";
 import { SelectDropdown } from "@/components/SelectDropdown";
 import { registerCreator, getLoggedInCreator } from "@/lib/creator-auth";
 import { setAppRole } from "@/lib/client-auth";
+import { apiGet } from "@/lib/api-client";
 import { processImageUpload, uploadLimits } from "@/lib/file-upload";
 import { ImageUpload } from "@/components/MediaUpload";
 import {
@@ -47,19 +48,46 @@ export default function RegisterPage() {
   const [whatsapp, setWhatsapp] = useState("");
   const [avatar, setAvatar] = useState<string | null>(null);
   const [services, setServices] = useState<ServiceEntry[]>([emptyService()]);
+  const [referralCode, setReferralCode] = useState("");
+  const [referrerName, setReferrerName] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    setNextPath(
-      safeNextPath(new URLSearchParams(window.location.search).get("next"))
-    );
+    const params = new URLSearchParams(window.location.search);
+    setNextPath(safeNextPath(params.get("next")));
+    setReferralCode(params.get("ref")?.trim().toUpperCase() ?? "");
     fetchAppSettings().then(setSettings);
     getCategories().then((cats) => {
       setCategories(cats);
       setCategory((prev) => prev || cats[0] || "");
     });
   }, []);
+
+  // Show who the code belongs to, so a typo is obvious before signing up.
+  useEffect(() => {
+    const code = referralCode.trim();
+    if (code.length < 4) {
+      setReferrerName(null);
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      apiGet<{ referrerName: string | null }>(
+        `/api/referrals/lookup?code=${encodeURIComponent(code)}`
+      )
+        .then((data) => {
+          if (!cancelled) setReferrerName(data.referrerName);
+        })
+        .catch(() => {
+          if (!cancelled) setReferrerName(null);
+        });
+    }, 350);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [referralCode]);
 
   useEffect(() => {
     getLoggedInCreator().then((creator) => {
@@ -117,6 +145,7 @@ export default function RegisterPage() {
         avatar,
         services: parsedServices,
         videos: [],
+        referralCode: referralCode.trim() || undefined,
       });
       setAppRole("creator");
       router.push(nextPath);
@@ -202,6 +231,30 @@ export default function RegisterPage() {
                 autoComplete="new-password"
                 required
               />
+            </div>
+            <div className="sm:col-span-2">
+              <label htmlFor="referral" className={authLabelClass}>
+                Referral code (optional)
+              </label>
+              <input
+                id="referral"
+                className={`${authInputClass} uppercase`}
+                value={referralCode}
+                onChange={(e) => setReferralCode(e.target.value)}
+                placeholder="Invited by a creator? Enter their code"
+                autoCapitalize="characters"
+                autoComplete="off"
+              />
+              {referrerName && (
+                <p className="mt-1.5 text-sm text-olive-700">
+                  Invited by <span className="font-semibold">{referrerName}</span>
+                </p>
+              )}
+              {!referrerName && referralCode.trim().length >= 4 && (
+                <p className="mt-1.5 text-xs text-olive-500">
+                  We don&apos;t recognise this code yet. You can still sign up.
+                </p>
+              )}
             </div>
           </div>
         </AuthSection>
